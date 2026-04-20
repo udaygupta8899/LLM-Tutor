@@ -7,5 +7,9 @@ ipykernel
 langgraph
 tiktoken
 langchain-openai
-lanchain-community
+langchain-community
 langchain-text-splitters
+pydantic
+fastapi
+uvicorn
+langchain_chroma
