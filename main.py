@@ -3,8 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
 
-# Assuming your LangGraph compilation code is saved in a file named `agent.py`
-# and the compiled graph is named `app`
 from agent import app as langgraph_agent 
 
 # Initialize FastAPI
@@ -18,7 +16,8 @@ api = FastAPI(
 # In production, replace the localhost with your actual Netlify URL
 ALLOWED_ORIGINS = [
     "http://localhost:3000",         # For local Next.js testing
-    "https://dl-tutor.novaric.in"    # Your production domain
+    "https://dl-tutor.novaric.in",   # Your production domain
+    "https://heroic-cobbler-7548b3.netlify.app"  # Netlify preview URL (if applicable)
 ]
 
 api.add_middleware(

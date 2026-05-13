@@ -1,9 +1,6 @@
-langchain
 pypdf
 chromadb
-streamlit
 python-dotenv
-ipykernel
 langgraph
 tiktoken
 langchain-openai

@@ -11,6 +11,7 @@ from langgraph.checkpoint.memory import MemorySaver
 import requests
 from dotenv import load_dotenv
 load_dotenv()
+
 # Set your API key
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 
@@ -80,6 +81,98 @@ class GraphState(TypedDict):
     documents: List[str]
     loop_step: int
     chat_history: List[str]
+    relevance: str
+
+def check_relevance(state):
+    """Check if the user's question is related to Deep Learning, or is a greeting/pleasantry."""
+    print("---CHECKING QUERY RELEVANCE---")
+    question = state["question"]
+    
+    prompt = ChatPromptTemplate.from_template(
+        "You are a relevance classifier. Classify the following user message into exactly one of three categories.\n\n"
+        "User message: {question}\n\n"
+        "Categories:\n"
+        "- 'greeting' — if the message is a greeting, pleasantry, farewell, or expression of gratitude "
+        "(e.g., hi, hello, hey, thanks, thank you, bye, goodbye, good morning, how are you).\n"
+        "- 'yes' — if the message is a question or topic related to Deep Learning, Machine Learning, "
+        "Artificial Intelligence, Neural Networks, or closely related mathematical/computational concepts "
+        "(e.g., linear algebra for neural networks, optimization, probability for ML).\n"
+        "- 'no' — if the message is about something clearly unrelated like cooking, sports, politics, "
+        "entertainment, or any other off-topic subject.\n\n"
+        "Answer with ONLY one word: 'greeting', 'yes', or 'no'. Nothing else."
+    )
+    
+    chain = prompt | llm | StrOutputParser()
+    score = chain.invoke({"question": question})
+    
+    return {"question": question, "relevance": score.strip().lower()}
+
+def route_on_relevance(state):
+    """Route based on whether the query is relevant to Deep Learning, a greeting, or unrelated."""
+    relevance = state.get("relevance", "no")
+    if "greeting" in relevance:
+        print("---DECISION: GREETING DETECTED, RESPONDING WARMLY---")
+        return "greeting"
+    elif "yes" in relevance:
+        print("---DECISION: QUERY IS RELEVANT, PROCEEDING TO RETRIEVAL---")
+        return "relevant"
+    else:
+        print("---DECISION: QUERY IS NOT RELATED TO DEEP LEARNING---")
+        return "not_relevant"
+
+def greet(state):
+    """Return a friendly greeting for pleasantries like hi, hello, thanks, etc."""
+    print("---GREETING USER---")
+    question = state["question"]
+    chat_history = state.get("chat_history", [])
+    
+    prompt = ChatPromptTemplate.from_template(
+        "You are a friendly Deep Learning tutor. The student has sent you a greeting or pleasantry.\n"
+        "Respond warmly and briefly, and remind them that you're here to help with Deep Learning questions.\n"
+        "Keep it to 1-2 sentences. Be friendly and encouraging.\n\n"
+        "Student's message: {question}\n"
+        "Your response:"
+    )
+    
+    chain = prompt | llm | StrOutputParser()
+    greeting_response = chain.invoke({"question": question})
+    
+    updated_history = chat_history.copy()
+    updated_history.append(f"User: {question}")
+    updated_history.append(f"Tutor: {greeting_response}")
+    
+    return {
+        "documents": [],
+        "question": question,
+        "generation": greeting_response,
+        "chat_history": updated_history,
+        "loop_step": 0
+    }
+
+def reject(state):
+    """Return a rejection message for unrelated queries."""
+    print("---REJECTING UNRELATED QUERY---")
+    question = state["question"]
+    chat_history = state.get("chat_history", [])
+    
+    rejection_msg = (
+        "I'm sorry, but your question doesn't appear to be related to Deep Learning. "
+        "I'm a Deep Learning tutor and can only assist with questions about Deep Learning, "
+        "Neural Networks, Machine Learning, and related concepts from the textbook. "
+        "Please ask a question related to Deep Learning!"
+    )
+    
+    updated_history = chat_history.copy()
+    updated_history.append(f"User: {question}")
+    updated_history.append(f"Tutor: {rejection_msg}")
+    
+    return {
+        "documents": [],
+        "question": question,
+        "generation": rejection_msg,
+        "chat_history": updated_history,
+        "loop_step": 0
+    }
 
 def retrieve(state):
     print("---RETRIEVING DOCUMENTS---")
@@ -119,13 +212,21 @@ def generate(state):
     
     context = "\n\n".join([d.page_content for d in documents])
     
-    prompt = ChatPromptTemplate.from_template(
-        "You are an expert deep learning tutor. Use the following pieces of retrieved context to answer the question.\n"
-        "If you don't know the answer based on the context, just say that you don't know.\n"
-        "Context: {context}\n"
-        "Question: {question}\n"
-        "Answer:"
-    )
+    prompt = ChatPromptTemplate.from_messages([
+        ("system",
+         "You are an expert Deep Learning tutor. Your role is to help students understand Deep Learning concepts "
+         "using ONLY the provided context from the textbook.\n\n"
+         "Rules:\n"
+         "1. Answer the student's question based strictly on the provided context.\n"
+         "2. If the context does not contain enough information to answer, say: "
+         "'I don't have enough information in the textbook to answer that specific question.'\n"
+         "3. If the question is not related to Deep Learning at all, say: "
+         "'Your question is not related to Deep Learning. I can only assist with Deep Learning concepts.'\n"
+         "4. Be clear, concise, and educational in your explanations."),
+        ("human",
+         "Context from textbook:\n{context}\n\n"
+         "Student's question: {question}")
+    ])
     
     rag_chain = prompt | llm | StrOutputParser()
     generation = rag_chain.invoke({"context": context, "question": question})
@@ -139,7 +240,8 @@ def generate(state):
         "documents": documents, 
         "question": question, 
         "generation": generation,
-        "chat_history": updated_history
+        "chat_history": updated_history,
+        "loop_step": state.get("loop_step", 0)
     }
 
 def rewrite_query(state):
@@ -152,13 +254,18 @@ def rewrite_query(state):
     history_str = "\n".join(chat_history) if chat_history else "No previous conversation."
     
     prompt = ChatPromptTemplate.from_template(
-        "You are an expert search assistant for a Deep Learning Concepts Tutor.\n"
-        "Look at the conversation history and the user's latest question. "
-        "If the latest question references previous context, formulate a standalone, highly specific query optimized for vector database retrieval.\n"
-        "Crucially, ensure the rewritten question is explicitly framed within Deep Learning terminology.\n\n"
+        "You are a search query refinement assistant for a Deep Learning textbook retrieval system.\n\n"
+        "Your job is VERY limited:\n"
+        "1. Fix any grammatical or spelling errors in the user's question.\n"
+        "2. If the question uses a pronoun or reference (like 'it', 'that', 'this') that refers to something "
+        "from the conversation history, resolve it to be explicit.\n"
+        "3. Do NOT change the meaning or intent of the question.\n"
+        "4. Do NOT add Deep Learning terminology that the user did not use.\n"
+        "5. Do NOT transform or reframe the question into a different question.\n"
+        "6. Keep the question as close to the original as possible.\n\n"
         "Conversation History:\n{history}\n\n"
-        "Initial question: {question}\n"
-        "Improved Deep Learning question:"
+        "User's question: {question}\n"
+        "Corrected question:"
     )
     
     rewriter_chain = prompt | llm | StrOutputParser()
@@ -178,11 +285,12 @@ def check_hallucination(state):
     context = "\n\n".join([d.page_content for d in documents])
     
     prompt = ChatPromptTemplate.from_template(
-        "You are a strict grader assessing whether an answer is grounded in / supported by a set of facts.\n"
-        "Here are the facts (retrieved context): \n\n {context} \n\n"
-        "Here is the generated answer: {generation}\n"
-        "Give a binary score 'yes' or 'no' to indicate whether the answer is entirely grounded in the facts.\n"
-        "If the answer contains ANY information not present in the facts, score it 'no'."
+        "You are a grader assessing whether an answer is grounded in a set of facts.\n"
+        "Facts: {context}\n"
+        "Answer: {generation}\n"
+        "Does the answer contradict the facts? (yes/no)\n"
+        "Is the core technical explanation supported by the facts? (yes/no)\n"
+        "If the answer is factually consistent with the context, even if it uses better phrasing, score it 'yes'."
     )
     
     hallucination_chain = prompt | llm | StrOutputParser()
@@ -232,17 +340,37 @@ memory = MemorySaver()
 workflow = StateGraph(GraphState)
 
 # Add all nodes
+workflow.add_node("check_relevance", check_relevance)
+workflow.add_node("greet", greet)
+workflow.add_node("reject", reject)
 workflow.add_node("retrieve", retrieve)
 workflow.add_node("grade_documents", grade_documents)
 workflow.add_node("generate", generate)
 workflow.add_node("rewrite_query", rewrite_query)
 
-# Add standard edges
-workflow.set_entry_point("retrieve")
+# Entry point: check relevance first
+workflow.set_entry_point("check_relevance")
+
+# Route based on relevance
+workflow.add_conditional_edges(
+    "check_relevance",
+    route_on_relevance,
+    {
+        "greeting": "greet",           # Greeting → respond warmly
+        "relevant": "retrieve",        # DL-related → proceed to RAG
+        "not_relevant": "reject",      # Unrelated → reject immediately
+    },
+)
+
+# Greet and reject both end the graph
+workflow.add_edge("greet", END)
+workflow.add_edge("reject", END)
+
+# Standard edges
 workflow.add_edge("retrieve", "grade_documents")
 workflow.add_edge("rewrite_query", "retrieve")
 
-# Add the first conditional routing (Document Grading)
+# Conditional routing after document grading
 workflow.add_conditional_edges(
     "grade_documents",
     decide_to_generate,
@@ -252,7 +380,7 @@ workflow.add_conditional_edges(
     },
 )
 
-# Add the new conditional routing (Hallucination Checking)
+# Conditional routing after generation (hallucination check)
 workflow.add_conditional_edges(
     "generate",
     decide_if_grounded,
