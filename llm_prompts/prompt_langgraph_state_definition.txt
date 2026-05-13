@@ -1,0 +1,7 @@
+Prompt: "I'm building a RAG with LangGraph. I need to define my AgentState class. It should track the user's question, the retrieved documents, the current chat history, and a flag for whether the answer was successfully generated. How should I structure this in Python?"
+
+Model: Gemini 3 Flash
+
+Date: April 15, 2026
+
+Note: Very effective. The LLM suggested using TypedDict and Annotated with operator.add for the message list, which ensured the state didn't overwrite previous chat history during graph cycles.

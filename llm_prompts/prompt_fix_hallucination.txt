@@ -1,0 +1,5 @@
+Prompt : The prompts are not at all good, i mean even if the user is asking absurd questions, the chatbot is replying some dl concepts, make sure that only grammatical errors are rectified not the entire question should be changed. If the user query is unrelated the RAG should output the query is not related to deep learning.
+
+Date : May 13, 2026
+
+Model : Claude Opus 4.6 (Thinking)

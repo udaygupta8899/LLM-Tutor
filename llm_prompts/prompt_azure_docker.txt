@@ -1,0 +1,7 @@
+Prompt : Well now tell me how to containerize this and push it to azure
+
+Date : May 13, 2026
+
+Model : Claude Opus 4.6 (Thinking)
+
+Note : The model told me the steps to create the docker image and deploy it on azure. It was very helpful.

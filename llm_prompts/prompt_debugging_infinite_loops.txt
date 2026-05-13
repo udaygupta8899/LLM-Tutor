@@ -1,0 +1,7 @@
+Prompt: "My LangGraph agent is stuck in an infinite loop between 'rewrite_query' and 'retrieve'. How can I add a 'max_retries' counter to the graph state to break the loop after 3 attempts?"
+
+Model: Gemini 3 Flash
+
+Date: April 22, 2026
+
+Note: Crucial for system stability. The LLM showed how to increment a counter in the state and use a conditional edge to route to a 'fail' node if retries exceeded the limit.

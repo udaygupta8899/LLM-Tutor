@@ -1,0 +1,7 @@
+Prompt: "In my LangGraph, I want a node that decides if the retrieved documents are relevant. If they are, go to 'generate'; if not, go back to 'rewrite_query'. Give me the logic for a conditional edge function."
+
+Model: Gemini 3 Flash
+
+Date: April 18, 2026
+
+Note: This was a key architectural moment. The AI provided a "grade_documents" node logic using a Pydantic model to output a simple "yes" or "no" for routing.

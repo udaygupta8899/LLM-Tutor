@@ -1,0 +1,7 @@
+Prompt: "Give me a few test cases to evaluate my RAG. One should be a question covered in the PDF, one should be out-of-scope, and one should be ambiguous. I need to see if the LangGraph routes them correctly."
+
+Model: Gemini 3 Flash
+
+Date: May 13, 2026
+
+Note: Provided a structured testing plan for the "Results & Evaluation" section of the final report.

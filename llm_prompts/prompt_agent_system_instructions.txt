@@ -1,0 +1,7 @@
+Prompt: "Write a high-quality system prompt for my LangGraph 'generate' node. The agent is a Deep Learning Tutor. It must use the retrieved context, cite the textbook source, and if the context is missing, admit it doesn't know rather than hallucinating."
+
+Model: Gemini 3 Flash
+
+Date: April 25, 2026
+
+Note: Highly creative. The prompt included "Chain of Thought" instructions that forced the agent to think through the context before answering.

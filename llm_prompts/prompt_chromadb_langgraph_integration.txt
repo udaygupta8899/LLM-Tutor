@@ -1,0 +1,7 @@
+Prompt: "How do I wrap my ChromaDB retriever into a LangGraph node? I need it to take the 'question' from the state and write the 'documents' back to the state."
+
+Model: Gemini 3 Flash
+
+Date: April 15, 2026
+
+Note: Helped bridge the gap between static RAG and the Graph. The AI explained how to ensure the node returned the updated dictionary for the state.
