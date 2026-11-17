@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     GROQ_API_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
     LLM_PROVIDER: str = "groq"  # "groq" or "openai"
-    GROQ_MODEL: str = "llama-3.3-70b-versatile"  # Fast, state-of-the-art open weights on Groq
+    GROQ_MODEL: str = "openai/gpt-oss-120b"  # Target flagship model on Groq
     OPENAI_MODEL: str = "gpt-4o-mini"
     
     # Chroma Vector DB

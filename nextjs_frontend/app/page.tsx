@@ -94,7 +94,7 @@ export default function LLMTutorPage() {
             <div className="font-bold text-base text-white flex items-center gap-2">
               LLM Tutor
               <span className="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-mono">
-                Groq Llama-3.3 + Custom BM25/RRF
+                Groq GPT-OSS-120B + Custom BM25/RRF
               </span>
             </div>
             <p className="text-[11px] text-gray-400">Adaptive Agentic RAG • Course Slides & Foundational Research Papers</p>

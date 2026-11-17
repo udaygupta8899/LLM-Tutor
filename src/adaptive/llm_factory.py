@@ -21,12 +21,13 @@ def get_llm(temperature: float = 0.0, api_key: Optional[str] = None) -> Optional
     if groq_api_key:
         try:
             from langchain_groq import ChatGroq
-            # Preferred model candidate list
+            # Preferred model candidate list with openai/gpt-oss-120b first
             models_to_try = [
+                "openai/gpt-oss-120b",
                 settings.GROQ_MODEL,
-                "llama-3.1-8b-instant",
+                "openai/gpt-oss-20b",
                 "llama-3.3-70b-versatile",
-                "mixtral-8x7b-32768"
+                "llama-3.1-8b-instant"
             ]
             
             # If the user's key allows listing models, query available models
