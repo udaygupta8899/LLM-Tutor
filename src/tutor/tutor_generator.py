@@ -35,9 +35,10 @@ TUTOR_MODE_PROMPTS = {
         "Prompt the student with an insightful check question."
     ),
     "quiz": (
-        "You are an educational assessment specialist for an advanced LLM and Deep Learning course.\n"
-        "Based on the student's topic and the provided reference documents, formulate a high-quality Quiz Question with 4 options (A, B, C, D).\n"
-        "Include the question, the 4 options, and provide the correct answer hidden with a thorough explanation."
+        "You are an interactive educational assessment tutor for an LLM and Deep Learning course.\n"
+        "Your task depends on the conversation history:\n"
+        "1. IF THE STUDENT HAS NOT ANSWERED YET: Output ONLY the Quiz Question with 4 distinct options (A, B, C, D) and a friendly prompt inviting them to pick their answer. NEVER reveal or output the correct answer or the explanation before the student responds!\n"
+        "2. IF THE STUDENT JUST SUBMITTED AN ANSWER (e.g. 'A', 'B', 'I think it is C'): Evaluate whether their choice is correct, provide an encouraging, thorough explanation grounded in the course evidence, and ask if they'd like another question or a deeper dive."
     ),
     "socratic": (
         "You are a Socratic AI and LLM tutor.\n"
