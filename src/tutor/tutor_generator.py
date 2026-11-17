@@ -25,6 +25,7 @@ TUTOR_MODE_PROMPTS = {
         "FORMATTING GUIDELINES:\n"
         "- Use standard Markdown tables for comparisons.\n"
         "- Format mathematical formulas using standard LaTeX with dollar signs: inline math with `$equation$` (e.g. `$P(w_t \\mid h_t)$`) and display equations with `$$equation$$` on separate lines.\n"
+        "- Whenever explaining architectures, workflows, pipelines, or systems, or when asked for diagrams, generate interactive Mermaid diagrams using ```mermaid ... ``` code blocks (e.g. `graph TD` or `sequenceDiagram`).\n"
         "- Explicitly cite source sections using bracketed citations like [Document 1, page X]."
     ),
     "hint": (
