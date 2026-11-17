@@ -6,18 +6,21 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     # App
-    APP_NAME: str = "Adaptive LLM Tutor"
+    APP_NAME: str = "LLM Tutor"
     APP_VERSION: str = "2.0.0"
     DEBUG: bool = False
     
-    # Provider & Keys
+    # LLM Providers & Keys
+    GROQ_API_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
-    LLM_MODEL: str = "gpt-4o-mini"
-    EMBEDDING_MODEL: str = "text-embedding-3-small"
+    LLM_PROVIDER: str = "groq"  # "groq" or "openai"
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"  # Fast, state-of-the-art open weights on Groq
+    OPENAI_MODEL: str = "gpt-4o-mini"
     
     # Chroma Vector DB
     CHROMA_PERSIST_DIR: str = "./chroma_db"
-    CHROMA_COLLECTION_NAME: str = "dl-tutor-chroma"
+    CHROMA_COLLECTION_NAME: str = "llm-course-materials"  # Updated to LLM Course & Research Papers
+    CHROMA_FALLBACK_COLLECTION: str = "dl-tutor-chroma"    # Fallback to Deep Learning book
     
     # Retrieval Hyperparameters
     BM25_K1: float = 1.5

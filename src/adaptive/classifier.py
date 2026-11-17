@@ -11,11 +11,7 @@ import re
 from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field
 
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import JsonOutputParser
-from langchain_openai import ChatOpenAI
-from src.config import settings
-
+from src.adaptive.llm_factory import get_llm
 
 class QueryComplexity(BaseModel):
     category: str = Field(
@@ -31,17 +27,11 @@ class QueryComplexity(BaseModel):
 
 class AdaptiveClassifier:
     """
-    Classifies student questions by complexity using an LLM or fast deterministic heuristic fallback.
+    Classifies student questions by complexity using Groq / OpenAI LLM or fast deterministic heuristic fallback.
     """
 
     def __init__(self, model_name: Optional[str] = None):
-        self.model_name = model_name or settings.LLM_MODEL
-        self._llm = None
-        if os.getenv("OPENAI_API_KEY"):
-            try:
-                self._llm = ChatOpenAI(model=self.model_name, temperature=0)
-            except Exception:
-                self._llm = None
+        self._llm = get_llm(temperature=0.0)
 
     def classify(self, question: str, chat_history: Optional[str] = None) -> Dict[str, Any]:
         """

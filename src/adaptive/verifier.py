@@ -10,7 +10,7 @@ import re
 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from langchain_openai import ChatOpenAI
+from src.adaptive.llm_factory import get_llm
 from src.config import settings
 
 
@@ -21,13 +21,7 @@ class HallucinationVerifier:
     """
 
     def __init__(self, model_name: Optional[str] = None):
-        self.model_name = model_name or settings.LLM_MODEL
-        self._llm = None
-        if os.getenv("OPENAI_API_KEY"):
-            try:
-                self._llm = ChatOpenAI(model=self.model_name, temperature=0)
-            except Exception:
-                self._llm = None
+        self._llm = get_llm(temperature=0.0)
 
     def verify(self, answer: str, context_documents: List[Dict[str, Any]]) -> Dict[str, Any]:
         """

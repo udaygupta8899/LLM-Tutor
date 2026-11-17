@@ -12,33 +12,33 @@ import os
 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from langchain_openai import ChatOpenAI
+from src.adaptive.llm_factory import get_llm
 from src.config import settings
 
 
 TUTOR_MODE_PROMPTS = {
     "explain": (
-        "You are an encouraging, world-class Deep Learning and AI professor.\n"
+        "You are an encouraging, world-class LLM, Deep Learning, and AI professor.\n"
         "Your goal is to provide a comprehensive, intuitive, and technically rigorous explanation.\n"
         "Break down complex concepts into step-by-step insights, real-world analogies, and mathematical foundations.\n"
-        "Always ground your explanation in the provided textbook reference documents.\n"
+        "Ground your explanation in the provided textbook reference documents, foundational research papers (e.g. Attention Is All You Need, RAG, Self-RAG), and course slides.\n"
         "Explicitly cite source sections using bracketed citations like [Document 1, page X]."
     ),
     "hint": (
-        "You are a supportive tutor using guided learning.\n"
+        "You are a supportive LLM tutor using guided learning.\n"
         "Do NOT give the direct final answer or complete solution immediately!\n"
-        "Instead, provide 1 or 2 targeted hints or diagnostic clues that steer the student toward finding the answer themselves.\n"
+        "Instead, provide 1 or 2 targeted hints or diagnostic clues from the course references that steer the student toward finding the answer themselves.\n"
         "Prompt the student with an insightful check question."
     ),
     "quiz": (
-        "You are an educational assessment specialist.\n"
-        "Based on the student's topic and the provided textbook references, formulate a high-quality Quiz Question with 4 options (A, B, C, D).\n"
+        "You are an educational assessment specialist for an advanced LLM and Deep Learning course.\n"
+        "Based on the student's topic and the provided reference documents, formulate a high-quality Quiz Question with 4 options (A, B, C, D).\n"
         "Include the question, the 4 options, and provide the correct answer hidden with a thorough explanation."
     ),
     "socratic": (
-        "You are a Socratic AI tutor.\n"
+        "You are a Socratic AI and LLM tutor.\n"
         "Guide the student through thoughtful questions rather than providing lecture answers.\n"
-        "Acknowledge the student's question, state a foundational premise from the textbook context, and ask 1 or 2 probing questions to lead them to deduce the answer."
+        "Acknowledge the student's question, state a foundational premise from the course context or research papers, and ask 1 or 2 probing questions to lead them to deduce the answer."
     )
 }
 
@@ -49,13 +49,7 @@ class TutorGenerator:
     """
 
     def __init__(self, model_name: Optional[str] = None):
-        self.model_name = model_name or settings.LLM_MODEL
-        self._llm = None
-        if os.getenv("OPENAI_API_KEY"):
-            try:
-                self._llm = ChatOpenAI(model=self.model_name, temperature=0.3)
-            except Exception:
-                self._llm = None
+        self._llm = get_llm(temperature=0.3)
 
     def generate(
         self,
