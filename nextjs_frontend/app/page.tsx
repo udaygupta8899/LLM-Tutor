@@ -76,7 +76,24 @@ export default function LLMTutorPage() {
 
   useEffect(() => {
     setThreadId(crypto.randomUUID());
+    if (typeof window !== "undefined") {
+      const savedKey = localStorage.getItem("groq_api_key");
+      if (savedKey) {
+        setApiKey(savedKey);
+      }
+    }
   }, []);
+
+  const handleApiKeyChange = (val: string) => {
+    setApiKey(val);
+    if (typeof window !== "undefined") {
+      if (val.trim()) {
+        localStorage.setItem("groq_api_key", val.trim());
+      } else {
+        localStorage.removeItem("groq_api_key");
+      }
+    }
+  };
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -95,6 +112,11 @@ export default function LLMTutorPage() {
     difficulty: 'easy' | 'intermediate' | 'advanced',
     prevQuestionsList: string[]
   ) => {
+    if (!apiKey.trim()) {
+      alert("⚠️ API Key Required: Please enter your Groq API Key (gsk_...) in the top header before starting the quiz.");
+      setIsFetchingQuestion(false);
+      return;
+    }
     setIsFetchingQuestion(true);
     try {
       const res = await fetch(`${API_BASE}/api/quiz/single-question`, {
@@ -206,6 +228,16 @@ export default function LLMTutorPage() {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
+    if (!apiKey.trim()) {
+      const warningMsg: Message = {
+        role: 'assistant',
+        content: `⚠️ **Groq API Key Required**\n\nPlease enter your **Groq API Key** (\`gsk_...\`) in the input box in the top navigation bar before asking a question. Your API key is strictly used directly from your browser session.`
+      };
+      setMessages(prev => [...prev, { role: 'user', content: input }, warningMsg]);
+      setInput('');
+      return;
+    }
+
     const userMsg: Message = { role: 'user', content: input };
     setMessages(prev => [...prev, userMsg]);
     const currentInput = input;
@@ -226,11 +258,14 @@ export default function LLMTutorPage() {
           thread_id: threadId,
           tutor_mode: tutorMode,
           chat_history: recentHistory,
-          api_key: apiKey.trim() || undefined
+          api_key: apiKey.trim()
         }),
       });
 
-      if (!response.ok) throw new Error("Backend connection failed");
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.detail || `Backend connection failed (${response.status})`);
+      }
       const data = await response.json();
       
       const assistantMsg: Message = {
@@ -250,7 +285,7 @@ export default function LLMTutorPage() {
     } catch (err: any) {
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: `**⚠️ Error:** Could not connect to LLM Tutor API (${API_BASE}). Please ensure backend is running.` 
+        content: `**⚠️ Error:** ${err.message || `Could not connect to LLM Tutor API (${API_BASE}).`}` 
       }]);
     } finally {
       setIsLoading(false);
@@ -278,13 +313,30 @@ export default function LLMTutorPage() {
 
         {/* Mode Selector & API Key */}
         <div className="flex items-center space-x-3 text-xs">
-          <input
-            type="password"
-            placeholder="Groq API Key (gsk_...)"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-indigo-300 placeholder-gray-500 focus:outline-none focus:border-indigo-500 w-48"
-          />
+          <div className="relative flex items-center">
+            <input
+              type="password"
+              placeholder="Groq API Key (gsk_...)"
+              value={apiKey}
+              onChange={(e) => handleApiKeyChange(e.target.value)}
+              className={`border rounded-lg pl-3 pr-16 py-1.5 text-xs placeholder-gray-500 focus:outline-none transition-all w-56 ${
+                apiKey.trim()
+                  ? 'border-emerald-500/70 text-emerald-300 focus:border-emerald-400 bg-gray-900/90'
+                  : 'border-amber-500/80 text-amber-200 focus:border-amber-400 bg-amber-950/20 shadow-[0_0_10px_rgba(245,158,11,0.25)]'
+              }`}
+            />
+            <div className="absolute right-1.5 flex items-center pointer-events-none">
+              {apiKey.trim() ? (
+                <span className="text-[9px] bg-emerald-950 text-emerald-400 border border-emerald-500/50 px-1.5 py-0.5 rounded font-mono font-medium">
+                  ✓ Active
+                </span>
+              ) : (
+                <span className="text-[9px] bg-amber-950 text-amber-300 border border-amber-500/60 px-1.5 py-0.5 rounded font-mono font-medium animate-pulse">
+                  Required
+                </span>
+              )}
+            </div>
+          </div>
 
           {/* Mode Selector is hidden / locked while Quiz is Active */}
           {!isQuizActive ? (

@@ -179,7 +179,8 @@ class AdaptiveAgenticRAGTutor:
     def _node_classify_complexity(self, state: AgentState):
         question = state["question"]
         history = state.get("chat_history", "")
-        classification = self.classifier.classify(question, chat_history=history)
+        key = state.get("api_key")
+        classification = self.classifier.classify(question, chat_history=history, api_key=key)
         
         comp = classification["category"]
         strategy = "direct" if comp == "straightforward" else ("single_rag" if comp == "simple" else "agentic_rag")
@@ -216,7 +217,8 @@ class AdaptiveAgenticRAGTutor:
 
     def _node_decompose_query(self, state: AgentState):
         question = state["question"]
-        subqueries = self.decomposer.decompose(question)
+        key = state.get("api_key")
+        subqueries = self.decomposer.decompose(question, api_key=key)
         return {"subqueries": subqueries}
 
     def _node_iterative_retrieve(self, state: AgentState):
@@ -275,7 +277,8 @@ class AdaptiveAgenticRAGTutor:
     def _node_verify_grounding(self, state: AgentState):
         answer = state.get("generation", "")
         docs = state.get("retrieved_documents", [])
-        v_res = self.verifier.verify(answer, docs)
+        key = state.get("api_key")
+        v_res = self.verifier.verify(answer, docs, api_key=key)
         return {"verification_result": v_res}
 
     def _node_record_memory(self, state: AgentState):

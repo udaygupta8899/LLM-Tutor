@@ -33,14 +33,15 @@ class AdaptiveClassifier:
     def __init__(self, model_name: Optional[str] = None):
         self._llm = get_llm(temperature=0.0)
 
-    def classify(self, question: str, chat_history: Optional[str] = None) -> Dict[str, Any]:
+    def classify(self, question: str, chat_history: Optional[str] = None, api_key: Optional[str] = None) -> Dict[str, Any]:
         """
         Classifies incoming question into:
         - straightforward: Greetings, simple factual definitions, general meta queries
         - simple: Standard conceptual question answerable from a single section/topic
         - complex: Multi-hop reasoning, architectural trade-offs, synthesis across multiple topics
         """
-        if self._llm is not None:
+        active_llm = get_llm(temperature=0.0, api_key=api_key) or self._llm
+        if active_llm is not None:
             try:
                 parser = JsonOutputParser(pydantic_object=QueryComplexity)
                 prompt = ChatPromptTemplate.from_messages([
@@ -53,7 +54,7 @@ class AdaptiveClassifier:
                      "{format_instructions}"),
                     ("human", "Question: {question}\nRecent History:\n{history}")
                 ])
-                chain = prompt | self._llm | parser
+                chain = prompt | active_llm | parser
                 result = chain.invoke({
                     "question": question,
                     "history": chat_history or "None",

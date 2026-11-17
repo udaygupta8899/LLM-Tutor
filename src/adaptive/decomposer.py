@@ -21,9 +21,10 @@ class QueryDecomposer:
     def __init__(self, model_name: Optional[str] = None):
         self._llm = get_llm(temperature=0.0)
 
-    def decompose(self, query: str) -> List[str]:
+    def decompose(self, query: str, api_key: Optional[str] = None) -> List[str]:
         """Decomposes a query into sub-questions."""
-        if self._llm is not None:
+        active_llm = get_llm(temperature=0.0, api_key=api_key) or self._llm
+        if active_llm is not None:
             try:
                 prompt = ChatPromptTemplate.from_messages([
                     ("system", 
@@ -32,7 +33,7 @@ class QueryDecomposer:
                      "Format output as a numbered list: 1., 2., 3. Output ONLY the numbered questions."),
                     ("human", "{query}")
                 ])
-                chain = prompt | self._llm | StrOutputParser()
+                chain = prompt | active_llm | StrOutputParser()
                 response = chain.invoke({"query": query})
                 lines = [line.strip() for line in response.split("\n") if line.strip()]
                 subqueries = []

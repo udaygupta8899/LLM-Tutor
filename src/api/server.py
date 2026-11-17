@@ -95,13 +95,18 @@ class GenerateSingleQuestionRequest(BaseModel):
 @app.post("/api/quiz/single-question")
 def generate_single_question_endpoint(request: GenerateSingleQuestionRequest):
     """Dynamically generates one question matching learner level."""
+    if not request.api_key or not request.api_key.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="API Key required. Please enter your Groq API Key in the frontend header to generate quiz questions."
+        )
     try:
         return quiz_manager.generate_single_question(
             topic=request.topic,
             question_number=request.question_number,
             difficulty=request.difficulty,
             previous_questions=request.previous_questions,
-            api_key=request.api_key
+            api_key=request.api_key.strip()
         )
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
@@ -128,6 +133,11 @@ async def chat_endpoint(request: ChatRequest):
     Main conversational endpoint:
     Runs prompt injection check -> complexity classification -> adaptive routing -> hybrid retrieval -> tutoring synthesis -> verification.
     """
+    if not request.api_key or not request.api_key.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="API Key required. Please enter your Groq API Key (gsk_...) in the frontend header before chatting."
+        )
     try:
         # Retrieve recent interactions from DB if chat_history not explicitly sent
         history_context = request.chat_history or ""
@@ -145,7 +155,7 @@ async def chat_endpoint(request: ChatRequest):
             tutor_mode=request.tutor_mode or "explain",
             thread_id=request.thread_id or "default_thread",
             chat_history=history_context,
-            api_key=request.api_key
+            api_key=request.api_key.strip()
         )
         
         return ChatResponse(

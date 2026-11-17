@@ -23,7 +23,7 @@ class HallucinationVerifier:
     def __init__(self, model_name: Optional[str] = None):
         self._llm = get_llm(temperature=0.0)
 
-    def verify(self, answer: str, context_documents: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def verify(self, answer: str, context_documents: List[Dict[str, Any]], api_key: Optional[str] = None) -> Dict[str, Any]:
         """
         Assesses whether the generated answer is faithful to the retrieved documents.
         
@@ -45,7 +45,8 @@ class HallucinationVerifier:
 
         context_text = "\n\n".join([f"Document [{i+1}]: {doc.get('text', '')}" for i, doc in enumerate(context_documents[:5])])
 
-        if self._llm is not None:
+        active_llm = get_llm(temperature=0.0, api_key=api_key) or self._llm
+        if active_llm is not None:
             try:
                 prompt = ChatPromptTemplate.from_messages([
                     ("system", 
@@ -59,7 +60,7 @@ class HallucinationVerifier:
                      "REASONING: <brief explanation>"),
                     ("human", "Verify this answer.")
                 ])
-                chain = prompt | self._llm | StrOutputParser()
+                chain = prompt | active_llm | StrOutputParser()
                 response = chain.invoke({"context": context_text, "answer": answer})
                 
                 is_grounded = "GROUNDED: YES" in response.upper() or ("YES" in response[:30].upper())
