@@ -21,6 +21,7 @@ interface Message {
 
 interface QuizQuestion {
   id: number;
+  difficulty?: string;
   question: string;
   options: string[];
   correct_option: string;
@@ -29,6 +30,7 @@ interface QuizQuestion {
 
 interface QuizAnswerRecord {
   id: number;
+  difficulty?: string;
   question: string;
   selectedOption: string;
   correctOption: string;
@@ -52,13 +54,16 @@ export default function LLMTutorPage() {
   const [apiKey, setApiKey] = useState('');
   const [latestMetadata, setLatestMetadata] = useState<any>(null);
   
-  // Interactive Quiz Modal State
+  // Interactive Adaptive Quiz State
   const [showQuizModal, setShowQuizModal] = useState(false);
-  const [quizTopic, setQuizTopic] = useState('Transformer Attention & RAG');
-  const [quizNumQuestions, setQuizNumQuestions] = useState(3);
-  const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
-  const [activeQuiz, setActiveQuiz] = useState<{ topic: string; questions: QuizQuestion[] } | null>(null);
+  const [quizTopic, setQuizTopic] = useState('Transformer Attention & Self-RAG');
+  const [totalRequestedQuestions, setTotalRequestedQuestions] = useState(3);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [currentDifficulty, setCurrentDifficulty] = useState<'easy' | 'intermediate' | 'advanced'>('easy');
+  const [currentQuestion, setCurrentQuestion] = useState<QuizQuestion | null>(null);
+  const [isFetchingQuestion, setIsFetchingQuestion] = useState(false);
+  const [isQuizActive, setIsQuizActive] = useState(false);
+  
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
@@ -73,90 +78,120 @@ export default function LLMTutorPage() {
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, activeQuiz]);
+  }, [messages, currentQuestion, completedQuizSummary]);
 
   const handleModeChange = (mode: 'explain' | 'hint' | 'quiz' | 'socratic') => {
+    if (isQuizActive) return; // Mode switcher locked during quiz
     setTutorMode(mode);
     if (mode === 'quiz') {
       setShowQuizModal(true);
     }
   };
 
-  const handleStartQuiz = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!quizTopic.trim() || isGeneratingQuiz) return;
-    setIsGeneratingQuiz(true);
-
+  const fetchNextDynamicQuestion = async (
+    qNum: number,
+    difficulty: 'easy' | 'intermediate' | 'advanced',
+    prevQuestionsList: string[]
+  ) => {
+    setIsFetchingQuestion(true);
     try {
-      const res = await fetch("http://localhost:8000/api/quiz/generate", {
+      const res = await fetch("http://localhost:8000/api/quiz/single-question", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           topic: quizTopic.trim(),
-          num_questions: Number(quizNumQuestions),
+          question_number: qNum,
+          difficulty: difficulty,
+          previous_questions: prevQuestionsList,
           api_key: apiKey.trim() || undefined
         })
       });
       const data = await res.json();
-      if (data.questions && data.questions.length > 0) {
-        setActiveQuiz({ topic: data.topic, questions: data.questions });
-        setCurrentQuestionIndex(0);
-        setSelectedOption(null);
-        setIsAnswerSubmitted(false);
-        setScore(0);
-        setQuizAnswerHistory([]);
-        setCompletedQuizSummary(null);
-        setShowQuizModal(false);
-      }
+      setCurrentQuestion(data);
+      setSelectedOption(null);
+      setIsAnswerSubmitted(false);
     } catch (err) {
-      alert("Failed to generate quiz. Make sure backend is running.");
+      console.error(err);
     } finally {
-      setIsGeneratingQuiz(false);
+      setIsFetchingQuestion(false);
     }
+  };
+
+  const handleStartQuiz = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quizTopic.trim() || isFetchingQuestion) return;
+
+    setShowQuizModal(false);
+    setIsQuizActive(true);
+    setScore(0);
+    setCurrentQuestionIndex(1);
+    setCurrentDifficulty('easy');
+    setQuizAnswerHistory([]);
+    setCompletedQuizSummary(null);
+
+    await fetchNextDynamicQuestion(1, 'easy', []);
   };
 
   const handleOptionSelect = (optionLetter: string) => {
-    if (isAnswerSubmitted) return;
+    if (isAnswerSubmitted || !currentQuestion) return;
     setSelectedOption(optionLetter);
     setIsAnswerSubmitted(true);
 
-    const currentQ = activeQuiz?.questions[currentQuestionIndex];
-    if (currentQ) {
-      const isCorrect = optionLetter === currentQ.correct_option;
-      if (isCorrect) {
-        setScore(prev => prev + 1);
-      }
-      setQuizAnswerHistory(prev => [
-        ...prev,
-        {
-          id: currentQ.id,
-          question: currentQ.question,
-          selectedOption: optionLetter,
-          correctOption: currentQ.correct_option,
-          isCorrect: isCorrect,
-          explanation: currentQ.explanation
-        }
-      ]);
+    const isCorrect = optionLetter === currentQuestion.correct_option;
+    if (isCorrect) {
+      setScore(prev => prev + 1);
     }
+
+    setQuizAnswerHistory(prev => [
+      ...prev,
+      {
+        id: currentQuestion.id,
+        difficulty: currentDifficulty,
+        question: currentQuestion.question,
+        selectedOption: optionLetter,
+        correctOption: currentQuestion.correct_option,
+        isCorrect: isCorrect,
+        explanation: currentQuestion.explanation
+      }
+    ]);
   };
 
-  const handleNextQuestion = () => {
-    if (!activeQuiz) return;
-    if (currentQuestionIndex + 1 < activeQuiz.questions.length) {
-      setCurrentQuestionIndex(prev => prev + 1);
-      setSelectedOption(null);
-      setIsAnswerSubmitted(false);
+  const handleNextQuestion = async () => {
+    if (!currentQuestion) return;
+
+    if (currentQuestionIndex < totalRequestedQuestions) {
+      const nextQNum = currentQuestionIndex + 1;
+      // Adaptive Difficulty Progression:
+      // If student answered correctly -> increase difficulty; otherwise stay or consolidate
+      const wasCorrect = selectedOption === currentQuestion.correct_option;
+      let nextDiff: 'easy' | 'intermediate' | 'advanced' = currentDifficulty;
+      if (wasCorrect) {
+        if (currentDifficulty === 'easy') nextDiff = 'intermediate';
+        else if (currentDifficulty === 'intermediate') nextDiff = 'advanced';
+      } else {
+        if (currentDifficulty === 'advanced') nextDiff = 'intermediate';
+      }
+
+      setCurrentDifficulty(nextDiff);
+      setCurrentQuestionIndex(nextQNum);
+
+      const prevList = quizAnswerHistory.map(h => h.question);
+      prevList.push(currentQuestion.question);
+
+      await fetchNextDynamicQuestion(nextQNum, nextDiff, prevList);
     } else {
-      // Quiz finished - summarize and show downloadable report card
-      const finalScore = score + (selectedOption === activeQuiz.questions[currentQuestionIndex].correct_option ? 1 : 0);
+      // Quiz complete - finish session and unlock mode switcher
+      const finalScore = score; // Already accurately incremented in handleOptionSelect
       const summary = {
-        topic: activeQuiz.topic,
+        topic: quizTopic,
         score: finalScore,
-        total: activeQuiz.questions.length,
+        total: totalRequestedQuestions,
         results: quizAnswerHistory
       };
       setCompletedQuizSummary(summary);
-      setActiveQuiz(null);
+      setIsQuizActive(false);
+      setCurrentQuestion(null);
+      setTutorMode('explain'); // Restore default mode
     }
   };
 
@@ -238,20 +273,30 @@ export default function LLMTutorPage() {
             className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-indigo-300 placeholder-gray-500 focus:outline-none focus:border-indigo-500 w-48"
           />
 
-          <span className="text-gray-400 mr-1">Mode:</span>
-          {(['explain', 'hint', 'quiz', 'socratic'] as const).map(mode => (
-            <button
-              key={mode}
-              onClick={() => handleModeChange(mode)}
-              className={`px-3 py-1 rounded-md capitalize font-medium transition ${
-                tutorMode === mode
-                  ? 'bg-indigo-600 text-white shadow'
-                  : 'bg-gray-800 text-gray-400 hover:text-white'
-              }`}
-            >
-              {mode}
-            </button>
-          ))}
+          {/* Mode Selector is hidden / locked while Quiz is Active */}
+          {!isQuizActive ? (
+            <div className="flex items-center space-x-1">
+              <span className="text-gray-400 mr-1">Mode:</span>
+              {(['explain', 'hint', 'quiz', 'socratic'] as const).map(mode => (
+                <button
+                  key={mode}
+                  onClick={() => handleModeChange(mode)}
+                  className={`px-3 py-1 rounded-md capitalize font-medium transition ${
+                    tutorMode === mode
+                      ? 'bg-indigo-600 text-white shadow'
+                      : 'bg-gray-800 text-gray-400 hover:text-white'
+                  }`}
+                >
+                  {mode}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 bg-indigo-950/80 border border-indigo-500/40 px-3 py-1.5 rounded-lg text-indigo-300 font-mono text-xs">
+              <span className="w-2 h-2 rounded-full bg-indigo-400 animate-ping"></span>
+              <span>Quiz In Progress (Question {currentQuestionIndex}/{totalRequestedQuestions})</span>
+            </div>
+          )}
         </div>
       </header>
 
@@ -261,90 +306,106 @@ export default function LLMTutorPage() {
         <div className="flex-1 flex flex-col h-full overflow-y-auto">
           <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
             
-            {/* Active Interactive Quiz Card (When Quiz Mode Active) */}
-            {activeQuiz && (
+            {/* Active Interactive Dynamic Quiz Card */}
+            {isQuizActive && currentQuestion && (
               <div className="max-w-3xl mx-auto bg-slate-900 border border-indigo-500/50 rounded-2xl p-6 shadow-2xl space-y-5 animate-in fade-in duration-300">
                 <div className="flex justify-between items-center border-b border-slate-800 pb-3">
                   <div>
-                    <span className="text-xs font-mono uppercase bg-indigo-500/20 text-indigo-300 px-2.5 py-1 rounded-full font-semibold">
-                      Interactive Quiz
-                    </span>
-                    <h3 className="text-lg font-bold text-white mt-1.5">{activeQuiz.topic}</h3>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono uppercase bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full font-semibold border border-indigo-500/30">
+                        Adaptive Quiz
+                      </span>
+                      <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded-full font-semibold border ${
+                        currentDifficulty === 'easy' ? 'bg-sky-950 text-sky-300 border-sky-800' :
+                        (currentDifficulty === 'intermediate' ? 'bg-amber-950 text-amber-300 border-amber-800' : 'bg-purple-950 text-purple-300 border-purple-800')
+                      }`}>
+                        Level: {currentDifficulty.toUpperCase()}
+                      </span>
+                    </div>
+                    <h3 className="text-lg font-bold text-white mt-1.5">{quizTopic}</h3>
                   </div>
                   <div className="text-right">
                     <span className="text-xs text-slate-400">Question</span>
-                    <div className="text-sm font-bold text-indigo-400">
-                      {currentQuestionIndex + 1} / {activeQuiz.questions.length}
+                    <div className="text-base font-bold text-indigo-400">
+                      {currentQuestionIndex} / {totalRequestedQuestions}
                     </div>
                   </div>
                 </div>
 
-                {/* Current Question */}
-                <div className="text-base font-medium text-slate-100 leading-relaxed">
-                  {activeQuiz.questions[currentQuestionIndex].question}
-                </div>
-
-                {/* Interactive Clickable Options */}
-                <div className="space-y-3 pt-1">
-                  {activeQuiz.questions[currentQuestionIndex].options.map((opt, oIdx) => {
-                    const optLetter = opt.trim().charAt(0);
-                    const isSelected = selectedOption === optLetter;
-                    const isCorrect = optLetter === activeQuiz.questions[currentQuestionIndex].correct_option;
-                    
-                    let btnStyle = "bg-slate-800/80 hover:bg-slate-800 border-slate-700 text-slate-200";
-                    if (isAnswerSubmitted) {
-                      if (isCorrect) {
-                        btnStyle = "bg-emerald-950/80 border-emerald-500 text-emerald-200 ring-1 ring-emerald-500 font-semibold";
-                      } else if (isSelected && !isCorrect) {
-                        btnStyle = "bg-rose-950/80 border-rose-500 text-rose-200 ring-1 ring-rose-500";
-                      } else {
-                        btnStyle = "bg-slate-800/40 border-slate-800 text-slate-500 opacity-60";
-                      }
-                    }
-
-                    return (
-                      <button
-                        key={oIdx}
-                        disabled={isAnswerSubmitted}
-                        onClick={() => handleOptionSelect(optLetter)}
-                        className={`w-full text-left p-4 rounded-xl border text-sm transition-all flex items-start gap-3 ${btnStyle}`}
-                      >
-                        <span className="font-bold shrink-0">{optLetter}.</span>
-                        <span>{opt.replace(/^[A-D]\.\s*/, '')}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Feedback & Explanation Card (Revealed upon selection) */}
-                {isAnswerSubmitted && (
-                  <div className={`p-4 rounded-xl border text-sm space-y-2 animate-in fade-in ${
-                    selectedOption === activeQuiz.questions[currentQuestionIndex].correct_option
-                      ? 'bg-emerald-950/40 border-emerald-800/80 text-emerald-100'
-                      : 'bg-rose-950/40 border-rose-800/80 text-rose-100'
-                  }`}>
-                    <div className="flex items-center gap-2 font-bold text-sm">
-                      {selectedOption === activeQuiz.questions[currentQuestionIndex].correct_option ? (
-                        <span className="text-emerald-400">✅ Correct Answer!</span>
-                      ) : (
-                        <span className="text-rose-400">
-                          ❌ Incorrect. (Correct choice: {activeQuiz.questions[currentQuestionIndex].correct_option})
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-300 leading-relaxed pt-1">
-                      <strong>Explanation:</strong> {activeQuiz.questions[currentQuestionIndex].explanation}
-                    </p>
-
-                    <div className="pt-3 flex justify-end">
-                      <button
-                        onClick={handleNextQuestion}
-                        className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg text-xs flex items-center gap-1.5 transition shadow"
-                      >
-                        <span>{currentQuestionIndex + 1 < activeQuiz.questions.length ? "Next Question →" : "Finish Quiz"}</span>
-                      </button>
-                    </div>
+                {isFetchingQuestion ? (
+                  <div className="py-10 text-center text-slate-400 animate-pulse text-sm font-mono">
+                    ⚡ LLM synthesizing next adaptive question based on mastery...
                   </div>
+                ) : (
+                  <>
+                    {/* Current Question */}
+                    <div className="text-base font-medium text-slate-100 leading-relaxed">
+                      {currentQuestion.question}
+                    </div>
+
+                    {/* Interactive Clickable Options */}
+                    <div className="space-y-3 pt-1">
+                      {currentQuestion.options.map((opt, oIdx) => {
+                        const optLetter = opt.trim().charAt(0);
+                        const isSelected = selectedOption === optLetter;
+                        const isCorrect = optLetter === currentQuestion.correct_option;
+                        
+                        let btnStyle = "bg-slate-800/80 hover:bg-slate-800 border-slate-700 text-slate-200";
+                        if (isAnswerSubmitted) {
+                          if (isCorrect) {
+                            btnStyle = "bg-emerald-950/80 border-emerald-500 text-emerald-200 ring-1 ring-emerald-500 font-semibold";
+                          } else if (isSelected && !isCorrect) {
+                            btnStyle = "bg-rose-950/80 border-rose-500 text-rose-200 ring-1 ring-rose-500";
+                          } else {
+                            btnStyle = "bg-slate-800/40 border-slate-800 text-slate-500 opacity-60";
+                          }
+                        }
+
+                        return (
+                          <button
+                            key={oIdx}
+                            disabled={isAnswerSubmitted}
+                            onClick={() => handleOptionSelect(optLetter)}
+                            className={`w-full text-left p-4 rounded-xl border text-sm transition-all flex items-start gap-3 ${btnStyle}`}
+                          >
+                            <span className="font-bold shrink-0">{optLetter}.</span>
+                            <span>{opt.replace(/^[A-D]\.\s*/, '')}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Feedback & In-Depth Explanation */}
+                    {isAnswerSubmitted && (
+                      <div className={`p-4 rounded-xl border text-sm space-y-2 animate-in fade-in ${
+                        selectedOption === currentQuestion.correct_option
+                          ? 'bg-emerald-950/40 border-emerald-800/80 text-emerald-100'
+                          : 'bg-rose-950/40 border-rose-800/80 text-rose-100'
+                      }`}>
+                        <div className="flex items-center gap-2 font-bold text-sm">
+                          {selectedOption === currentQuestion.correct_option ? (
+                            <span className="text-emerald-400">✅ Correct Answer! (Level Promoted)</span>
+                          ) : (
+                            <span className="text-rose-400">
+                              ❌ Incorrect. (Correct choice: {currentQuestion.correct_option})
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-300 leading-relaxed pt-1">
+                          <strong>Explanation:</strong> {currentQuestion.explanation}
+                        </p>
+
+                        <div className="pt-3 flex justify-end">
+                          <button
+                            onClick={handleNextQuestion}
+                            className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg text-xs flex items-center gap-1.5 transition shadow"
+                          >
+                            <span>{currentQuestionIndex < totalRequestedQuestions ? "Next Question →" : "View Final Assessment Report →"}</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -381,8 +442,8 @@ export default function LLMTutorPage() {
                     <span className="font-bold text-emerald-400">💪 Strong Areas:</span>
                     <p className="text-slate-300 leading-relaxed">
                       {completedQuizSummary.score > 0 
-                        ? `Demonstrated clear command over foundational principles and question mechanics on ${completedQuizSummary.score} topics.`
-                        : "Focus on revisiting introductory lecture slides to establish core terminology."}
+                        ? `Demonstrated clear command over foundational principles and question mechanics on ${completedQuizSummary.score} concept(s).`
+                        : "Focus on revisiting foundational lecture slides to establish core terminology."}
                     </p>
                   </div>
 
@@ -409,7 +470,7 @@ export default function LLMTutorPage() {
             )}
 
             {/* Standard Welcome Screen */}
-            {messages.length === 0 && !activeQuiz && (
+            {messages.length === 0 && !isQuizActive && !completedQuizSummary && (
               <div className="h-[65vh] flex flex-col items-center justify-center text-center space-y-4 max-w-lg mx-auto">
                 <div className="w-14 h-14 rounded-2xl bg-indigo-600/20 border border-indigo-500 flex items-center justify-center text-3xl">
                   📖
@@ -493,8 +554,9 @@ export default function LLMTutorPage() {
             <form onSubmit={handleSubmit} className="max-w-4xl mx-auto relative group">
               <textarea
                 rows={1}
-                className="w-full bg-[#1f2937] border border-gray-700 rounded-xl py-3.5 pl-4 pr-14 text-sm text-white focus:outline-none focus:border-indigo-500 resize-none transition-all placeholder-gray-500"
-                placeholder="Ask about attention mechanisms, RAG, prompt injection, or test security..."
+                disabled={isQuizActive}
+                className="w-full bg-[#1f2937] border border-gray-700 rounded-xl py-3.5 pl-4 pr-14 text-sm text-white focus:outline-none focus:border-indigo-500 resize-none transition-all placeholder-gray-500 disabled:opacity-40"
+                placeholder={isQuizActive ? "Quiz in progress. Select options above..." : "Ask about attention mechanisms, RAG, prompt injection, or test security..."}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
@@ -507,7 +569,7 @@ export default function LLMTutorPage() {
               <button 
                 type="submit"
                 className="absolute right-3 bottom-2.5 p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition disabled:opacity-50"
-                disabled={isLoading || !input.trim()}
+                disabled={isLoading || !input.trim() || isQuizActive}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M7 11L12 6L17 11M12 18V7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path>
@@ -580,7 +642,7 @@ export default function LLMTutorPage() {
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center pb-3 border-b border-slate-800">
               <h3 className="font-bold text-lg text-white flex items-center gap-2">
-                <span>🎯 Start Interactive Quiz</span>
+                <span>🎯 Start Interactive Adaptive Quiz</span>
               </h3>
               <button 
                 onClick={() => setShowQuizModal(false)}
@@ -615,11 +677,11 @@ export default function LLMTutorPage() {
                   max={10}
                   required
                   placeholder="e.g. 3, 5, 10"
-                  value={quizNumQuestions}
-                  onChange={(e) => setQuizNumQuestions(Math.max(1, Math.min(10, Number(e.target.value) || 1)))}
+                  value={totalRequestedQuestions}
+                  onChange={(e) => setTotalRequestedQuestions(Math.max(1, Math.min(10, Number(e.target.value) || 1)))}
                   className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"
                 />
-                <span className="text-[10px] text-slate-500 mt-1 block">Type any number of questions between 1 and 10</span>
+                <span className="text-[10px] text-slate-500 mt-1 block">Questions adjust in difficulty dynamically (Easy → Intermediate → Advanced)</span>
               </div>
 
               <div className="pt-2 flex justify-end gap-3">
@@ -632,13 +694,13 @@ export default function LLMTutorPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isGeneratingQuiz || !quizTopic.trim()}
+                  disabled={isFetchingQuestion || !quizTopic.trim()}
                   className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition disabled:opacity-50 shadow-lg shadow-indigo-600/30"
                 >
-                  {isGeneratingQuiz ? (
-                    <span>Generating Questions...</span>
+                  {isFetchingQuestion ? (
+                    <span>Synthesizing Questions...</span>
                   ) : (
-                    <span>Launch Quiz →</span>
+                    <span>Launch Adaptive Quiz →</span>
                   )}
                 </button>
               </div>

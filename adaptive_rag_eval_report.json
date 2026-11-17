@@ -1,0 +1,47 @@
+[
+  {
+    "query": "Hello tutor! Hope you are doing well....",
+    "expected": "straightforward",
+    "detected": "straightforward",
+    "strategy": "direct",
+    "docs_retrieved": 0,
+    "grounding_score": 1.0,
+    "latency_s": 0.146
+  },
+  {
+    "query": "What does AI stand for?...",
+    "expected": "straightforward",
+    "detected": "simple",
+    "strategy": "single_rag",
+    "docs_retrieved": 4,
+    "grounding_score": 0.1,
+    "latency_s": 0.27
+  },
+  {
+    "query": "What is the vanishing gradient problem in dee...",
+    "expected": "simple",
+    "detected": "simple",
+    "strategy": "single_rag",
+    "docs_retrieved": 4,
+    "grounding_score": 0.31,
+    "latency_s": 0.21
+  },
+  {
+    "query": "How does dropout regularization reduce overfi...",
+    "expected": "simple",
+    "detected": "simple",
+    "strategy": "single_rag",
+    "docs_retrieved": 4,
+    "grounding_score": 0.13,
+    "latency_s": 0.189
+  },
+  {
+    "query": "Compare Convolutional Neural Networks and Rec...",
+    "expected": "complex",
+    "detected": "complex",
+    "strategy": "agentic_rag",
+    "docs_retrieved": 3,
+    "grounding_score": 0.08,
+    "latency_s": 0.534
+  }
+]

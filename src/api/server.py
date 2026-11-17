@@ -83,18 +83,22 @@ class HybridSearchRequest(BaseModel):
     top_k: int = 5
     enable_reranker: bool = False
 
-class GenerateQuizRequest(BaseModel):
+class GenerateSingleQuestionRequest(BaseModel):
     topic: str
-    num_questions: int = 3
+    question_number: int = 1
+    difficulty: str = "intermediate"
+    previous_questions: Optional[List[str]] = []
     api_key: Optional[str] = None
 
 
-@app.post("/api/quiz/generate")
-def generate_quiz_endpoint(request: GenerateQuizRequest):
-    """Generates an interactive multi-question quiz on a given topic."""
-    return quiz_manager.generate_quiz(
+@app.post("/api/quiz/single-question")
+def generate_single_question_endpoint(request: GenerateSingleQuestionRequest):
+    """Dynamically generates one question matching learner level."""
+    return quiz_manager.generate_single_question(
         topic=request.topic,
-        num_questions=request.num_questions,
+        question_number=request.question_number,
+        difficulty=request.difficulty,
+        previous_questions=request.previous_questions,
         api_key=request.api_key
     )
 

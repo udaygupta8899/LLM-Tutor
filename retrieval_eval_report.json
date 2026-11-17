@@ -1,0 +1,30 @@
+{
+  "BM25 Only": {
+    "Precision@K": 0.6,
+    "Recall@K": 1.0,
+    "MRR": 0.65,
+    "NDCG@K": 0.7514,
+    "Avg_Latency_ms": 0.07
+  },
+  "Dense Only": {
+    "Precision@K": 0.24,
+    "Recall@K": 0.8,
+    "MRR": 0.39,
+    "NDCG@K": 0.4668,
+    "Avg_Latency_ms": 53.23
+  },
+  "Hybrid RRF": {
+    "Precision@K": 0.28,
+    "Recall@K": 0.8,
+    "MRR": 0.5167,
+    "NDCG@K": 0.5404,
+    "Avg_Latency_ms": 1.82
+  },
+  "Hybrid + Rerank": {
+    "Precision@K": 0.28,
+    "Recall@K": 0.8,
+    "MRR": 0.5167,
+    "NDCG@K": 0.5404,
+    "Avg_Latency_ms": 1.42
+  }
+}
