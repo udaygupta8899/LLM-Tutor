@@ -94,16 +94,25 @@ class TutorGenerator:
                     "question": question
                 })
             except Exception as e:
-                pass
+                return f"⚠️ **LLM Generation Error**: {str(e)}\n\nPlease ensure your API Key is valid and active."
 
-        # Offline Educational Fallback Response
-        doc_refs = [f"Doc {d.get('id', i+1)}" for i, d in enumerate(context_documents or [])]
-        refs_str = f" [Referenced Sources: {', '.join(doc_refs)}]" if doc_refs else ""
+        # If no API key is provided, provide a clear explanation with the actual retrieved context!
+        if context_documents:
+            top_contexts = "\n\n".join([
+                f"> **Source**: `{d.get('metadata', {}).get('source', 'Reference')}` (Page {d.get('metadata', {}).get('page', 'N/A')})\n> {d.get('text', '').strip()}"
+                for d in context_documents[:3]
+            ])
+            return (
+                f"🔑 **Notice: No Active LLM API Key Provided**\n\n"
+                f"The system successfully executed **{tutor_mode.upper()} mode** and retrieved the relevant research evidence chunks below, "
+                f"but requires an active **Groq API Key** (or OpenAI Key) to synthesize the full custom response.\n\n"
+                f"### Retrieved Evidence from Knowledge Base:\n{top_contexts}\n\n"
+                f"---\n"
+                f"👉 **To enable full LLM generation**: Paste your free Groq API key (`gsk_...`) in the top navigation input field or add `GROQ_API_KEY=gsk_...` to `.env`."
+            )
+
         return (
-            f"**[Tutor Mode: {tutor_mode.capitalize()} | Mastery: {mastery_level.capitalize()}]**\n\n"
-            f"Here is the guided educational response for: *{question}*\n\n"
-            f"Deep Learning models leverage hierarchical feature representation and backpropagation for parameter optimization. "
-            f"The principles in the Goodfellow Deep Learning textbook demonstrate how optimization surfaces and regularization "
-            f"shape model generalization.{refs_str}\n\n"
-            f"*Follow-up Question:* Would you like to delve deeper into the mathematical derivation or explore a hands-on example?"
+            f"🔑 **Notice: No Active LLM API Key Provided**\n\n"
+            f"Question: *{question}*\n\n"
+            f"This request was routed to the direct LLM answering path. To generate full conversational responses, please provide your **Groq API Key** in the top navigation field or add `GROQ_API_KEY=gsk_...` to `.env`."
         )
