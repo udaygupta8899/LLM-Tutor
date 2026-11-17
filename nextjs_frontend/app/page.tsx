@@ -45,6 +45,8 @@ function cleanLatexDelimiters(text: string): string {
   return cleaned;
 }
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 export default function LLMTutorPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -95,7 +97,7 @@ export default function LLMTutorPage() {
   ) => {
     setIsFetchingQuestion(true);
     try {
-      const res = await fetch("http://localhost:8000/api/quiz/single-question", {
+      const res = await fetch(`${API_BASE}/api/quiz/single-question`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -216,7 +218,7 @@ export default function LLMTutorPage() {
         `${m.role === 'user' ? 'Student' : 'Tutor'}: ${m.content.slice(0, 300)}`
       ).join('\n\n');
 
-      const response = await fetch("http://localhost:8000/api/chat", {
+      const response = await fetch(`${API_BASE}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -248,7 +250,7 @@ export default function LLMTutorPage() {
     } catch (err: any) {
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: `**⚠️ Error:** Could not connect to LLM Tutor API (http://localhost:8000). Please ensure backend is running.` 
+        content: `**⚠️ Error:** Could not connect to LLM Tutor API (${API_BASE}). Please ensure backend is running.` 
       }]);
     } finally {
       setIsLoading(false);
