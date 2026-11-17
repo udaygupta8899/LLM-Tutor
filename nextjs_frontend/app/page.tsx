@@ -211,6 +211,11 @@ export default function LLMTutorPage() {
     setIsLoading(true);
 
     try {
+      // Build sliding window conversational memory from recent messages
+      const recentHistory = messages.slice(-4).map(m => 
+        `${m.role === 'user' ? 'Student' : 'Tutor'}: ${m.content.slice(0, 300)}`
+      ).join('\n\n');
+
       const response = await fetch("http://localhost:8000/api/chat", {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -218,6 +223,7 @@ export default function LLMTutorPage() {
           question: currentInput, 
           thread_id: threadId,
           tutor_mode: tutorMode,
+          chat_history: recentHistory,
           api_key: apiKey.trim() || undefined
         }),
       });

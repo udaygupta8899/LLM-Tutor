@@ -55,7 +55,8 @@ class ChatRequest(BaseModel):
     thread_id: Optional[str] = "default_thread"
     student_id: Optional[str] = "student_1"
     tutor_mode: Optional[str] = "explain"  # explain, hint, quiz, socratic
-    api_key: Optional[str] = None  # User provided Groq or OpenAI API key
+    chat_history: Optional[str] = ""       # Conversational memory passed from frontend
+    api_key: Optional[str] = None          # User provided Groq or OpenAI API key
 
 
 class ChatResponse(BaseModel):
@@ -128,11 +129,22 @@ async def chat_endpoint(request: ChatRequest):
     Runs prompt injection check -> complexity classification -> adaptive routing -> hybrid retrieval -> tutoring synthesis -> verification.
     """
     try:
+        # Retrieve recent interactions from DB if chat_history not explicitly sent
+        history_context = request.chat_history or ""
+        if not history_context and request.student_id:
+            recent_turns = learner_memory.get_recent_history(request.student_id, limit=4)
+            if recent_turns:
+                history_context = "\n".join([
+                    f"User: {t['question']}\nAssistant: {t['answer'][:300]}..." 
+                    for t in recent_turns
+                ])
+
         result = agent.run(
             question=request.question,
             student_id=request.student_id or "student_1",
             tutor_mode=request.tutor_mode or "explain",
             thread_id=request.thread_id or "default_thread",
+            chat_history=history_context,
             api_key=request.api_key
         )
         

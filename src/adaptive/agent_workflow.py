@@ -302,6 +302,7 @@ class AdaptiveAgenticRAGTutor:
         student_id: str = "student_1",
         tutor_mode: str = "explain",
         thread_id: str = "default_thread",
+        chat_history: str = "",
         api_key: Optional[str] = None
     ) -> Dict[str, Any]:
         """
@@ -314,7 +315,7 @@ class AdaptiveAgenticRAGTutor:
             "original_question": question,
             "student_id": student_id,
             "tutor_mode": tutor_mode,
-            "chat_history": "",
+            "chat_history": chat_history,
             "api_key": api_key,
             "security_result": {},
             "security_status": "PENDING",
