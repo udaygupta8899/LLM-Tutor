@@ -22,6 +22,7 @@ from src.adaptive.agent_workflow import AdaptiveAgenticRAGTutor
 from src.retrieval.hybrid_retriever import HybridRetriever
 from src.security.prompt_injection_detector import PromptInjectionDetector
 from src.tutor.learner_memory import LearnerMemory
+from src.tutor.quiz_manager import InteractiveQuizManager
 from src.config import settings
 
 # Initialize FastAPI application
@@ -45,6 +46,7 @@ retriever = HybridRetriever()
 detector = PromptInjectionDetector()
 agent = AdaptiveAgenticRAGTutor(hybrid_retriever=retriever, injection_detector=detector)
 learner_memory = LearnerMemory()
+quiz_manager = InteractiveQuizManager(hybrid_retriever=retriever)
 
 
 # Request / Response Schemas
@@ -80,6 +82,21 @@ class HybridSearchRequest(BaseModel):
     query: str
     top_k: int = 5
     enable_reranker: bool = False
+
+class GenerateQuizRequest(BaseModel):
+    topic: str
+    num_questions: int = 3
+    api_key: Optional[str] = None
+
+
+@app.post("/api/quiz/generate")
+def generate_quiz_endpoint(request: GenerateQuizRequest):
+    """Generates an interactive multi-question quiz on a given topic."""
+    return quiz_manager.generate_quiz(
+        topic=request.topic,
+        num_questions=request.num_questions,
+        api_key=request.api_key
+    )
 
 
 # Endpoints
