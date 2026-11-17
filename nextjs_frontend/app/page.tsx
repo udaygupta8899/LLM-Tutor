@@ -172,28 +172,7 @@ export default function LLMTutorPage() {
                   ? 'bg-indigo-600 text-white rounded-br-sm' 
                   : 'bg-[#1f2937] border border-gray-700 text-gray-200 rounded-bl-sm'
                 }`}>
-                  {m.metadata && (
-                    <div className="flex flex-wrap items-center gap-2 mb-2 pb-2 border-b border-gray-700 text-[10px] font-mono">
-                      <span className={`px-2 py-0.5 rounded border ${
-                        m.metadata.security_status === 'BLOCKED' 
-                          ? 'bg-rose-950 text-rose-300 border-rose-800' 
-                          : 'bg-emerald-950 text-emerald-300 border-emerald-800'
-                      }`}>
-                        {m.metadata.security_status}
-                      </span>
-                      <span className="px-2 py-0.5 rounded border border-indigo-800 bg-indigo-950 text-indigo-300">
-                        {m.metadata.complexity?.toUpperCase()}
-                      </span>
-                      <span className="px-2 py-0.5 rounded border border-gray-700 bg-gray-800 text-gray-300">
-                        {m.metadata.routing_strategy}
-                      </span>
-                      <span className="text-gray-400 ml-auto">
-                        {m.metadata.latency_seconds}s
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="prose prose-invert prose-sm max-w-none">
+                  <div className="markdown-content text-sm text-gray-200">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                       {m.content}
                     </ReactMarkdown>

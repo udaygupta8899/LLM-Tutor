@@ -24,3 +24,113 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Beautiful Markdown Typography & Tables */
+.markdown-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 1px solid #374151;
+}
+
+.markdown-content th {
+  background-color: #1f2937;
+  color: #93c5fd;
+  font-weight: 600;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border-bottom: 2px solid #4b5563;
+}
+
+.markdown-content td {
+  padding: 0.625rem 1rem;
+  border-bottom: 1px solid #374151;
+  color: #e5e7eb;
+}
+
+.markdown-content tr:nth-child(even) {
+  background-color: rgba(31, 41, 55, 0.4);
+}
+
+.markdown-content tr:hover {
+  background-color: rgba(55, 65, 81, 0.5);
+}
+
+.markdown-content h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #f3f4f6;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.markdown-content h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #a5b4fc;
+  margin-top: 1.15rem;
+  margin-bottom: 0.5rem;
+}
+
+.markdown-content h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #e0e7ff;
+  margin-top: 1rem;
+  margin-bottom: 0.35rem;
+}
+
+.markdown-content p {
+  line-height: 1.65;
+  margin-bottom: 0.75rem;
+}
+
+.markdown-content ul, .markdown-content ol {
+  margin-left: 1.5rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.6;
+}
+
+.markdown-content ul {
+  list-style-type: disc;
+}
+
+.markdown-content ol {
+  list-style-type: decimal;
+}
+
+.markdown-content li {
+  margin-bottom: 0.35rem;
+}
+
+.markdown-content code {
+  background-color: #1e293b;
+  color: #cbd5e1;
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.25rem;
+  font-size: 0.85em;
+  border: 1px solid #334155;
+}
+
+.markdown-content pre {
+  background-color: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  overflow-x: auto;
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.markdown-content blockquote {
+  border-left: 4px solid #6366f1;
+  padding-left: 1rem;
+  color: #94a3b8;
+  font-style: italic;
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+}

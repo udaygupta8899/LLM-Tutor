@@ -22,6 +22,34 @@
       background: #334155;
       border-radius: 4px;
     }
+    /* Clean Table and Markdown Typography */
+    .markdown-body table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.85rem;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .markdown-body th {
+      background: #1e293b;
+      color: #93c5fd;
+      padding: 0.65rem 0.85rem;
+      border-bottom: 2px solid #475569;
+      text-align: left;
+    }
+    .markdown-body td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid #334155;
+      color: #e2e8f0;
+    }
+    .markdown-body tr:nth-child(even) {
+      background: rgba(30, 41, 59, 0.4);
+    }
+    .markdown-body tr:hover {
+      background: rgba(51, 65, 85, 0.5);
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans">
@@ -535,15 +563,7 @@
 
       let badges = '';
       if (meta && sender === 'bot') {
-        const secColor = meta.security_status === 'BLOCKED' ? 'bg-rose-950 text-rose-300 border-rose-800' : 'bg-emerald-950 text-emerald-300 border-emerald-800';
-        badges = `
-          <div class="flex items-center gap-2 mb-2 pb-2 border-b border-slate-700 text-[10px] font-mono">
-            <span class="px-2 py-0.5 rounded border ${secColor}">${meta.security_status}</span>
-            <span class="px-2 py-0.5 rounded border border-indigo-800 bg-indigo-950 text-indigo-300">${meta.complexity.toUpperCase()}</span>
-            <span class="px-2 py-0.5 rounded border border-slate-700 bg-slate-800 text-slate-400">${meta.routing_strategy}</span>
-            <span class="text-slate-500 ml-auto">${meta.latency_seconds}s</span>
-          </div>
-        `;
+        // Telemetry badges removed from chat bubble; they remain cleanly displayed on the right sidebar telemetry panel
       }
 
       div.innerHTML = `
