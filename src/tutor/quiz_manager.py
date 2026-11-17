@@ -61,24 +61,30 @@ class InteractiveQuizManager:
             )
 
         try:
+            system_msg = (
+                "You are an expert AI and LLM university professor creating an adaptive exam question on the go.\n"
+                f"Topic: '{topic}'.\n"
+                f"{diff_desc}\n"
+                f"{prev_context}\n\n"
+                f"Reference Course Evidence from vector DB:\n{context_text}\n\n"
+                "Generate ONE multiple choice question with 4 options (A, B, C, D).\n"
+                "Return strictly a raw JSON object with NO markdown formatting, NO backticks, adhering to this structure:\n"
+                "{\n"
+                f'  "id": {question_number},\n'
+                f'  "difficulty": "{difficulty}",\n'
+                '  "question": "Question text here?",\n'
+                '  "options": ["A. Choice 1", "B. Choice 2", "C. Choice 3", "D. Choice 4"],\n'
+                '  "correct_option": "B",\n'
+                '  "explanation": "Detailed explanation of why B is correct..."\n'
+                "}"
+            )
+            # Escape curly braces for LangChain ChatPromptTemplate template variables
+            escaped_system_msg = system_msg.replace("{", "{{").replace("}", "}}")
+            human_msg = f"Create dynamic question #{question_number} now."
+
             prompt = ChatPromptTemplate.from_messages([
-                ("system",
-                 "You are an expert AI and LLM university professor creating an adaptive exam question on the go.\n"
-                 f"Topic: '{topic}'.\n"
-                 f"{diff_desc}\n"
-                 f"{prev_context}\n\n"
-                 f"Reference Course Evidence from vector DB:\n{context_text}\n\n"
-                 "Generate ONE multiple choice question with 4 options (A, B, C, D).\n"
-                 "Return strictly a raw JSON object with NO markdown formatting, NO backticks, in this exact format:\n"
-                 "{\n"
-                 f'  "id": {question_number},\n'
-                 f'  "difficulty": "{difficulty}",\n'
-                 '  "question": "Question text here?",\n'
-                 '  "options": ["A. Choice 1", "B. Choice 2", "C. Choice 3", "D. Choice 4"],\n'
-                 '  "correct_option": "B",\n'
-                 '  "explanation": "Detailed explanation of why B is correct..."\n'
-                 "}"),
-                ("human", f"Create dynamic question #{question_number} now.")
+                ("system", escaped_system_msg),
+                ("human", human_msg)
             ])
             chain = prompt | llm | StrOutputParser()
             raw_out = chain.invoke({})
