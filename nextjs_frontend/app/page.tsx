@@ -521,15 +521,17 @@ export default function LLMTutorPage() {
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                   Number of Questions
                 </label>
-                <select
+                <input
+                  type="number"
+                  min={1}
+                  max={10}
+                  required
+                  placeholder="e.g. 3, 5, 10"
                   value={quizNumQuestions}
-                  onChange={(e) => setQuizNumQuestions(Number(e.target.value))}
+                  onChange={(e) => setQuizNumQuestions(Math.max(1, Math.min(10, Number(e.target.value) || 1)))}
                   className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"
-                >
-                  <option value={2}>2 Questions (Quick Check)</option>
-                  <option value={3}>3 Questions (Standard)</option>
-                  <option value={5}>5 Questions (Comprehensive)</option>
-                </select>
+                />
+                <span className="text-[10px] text-slate-500 mt-1 block">Type any number of questions between 1 and 10</span>
               </div>
 
               <div className="pt-2 flex justify-end gap-3">
