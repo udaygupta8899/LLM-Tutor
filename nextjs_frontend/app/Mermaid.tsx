@@ -33,15 +33,29 @@ function sanitizeMermaidCode(code: string): string {
   let lines = code.trim().split("\n");
   
   let cleanedLines = lines.map(line => {
-    // Match node declarations like ID[Label with (parentheses) or / or special characters]
-    // which fail Mermaid parsing unless enclosed in quotes: ID["Label..."]
-    return line.replace(/(\w+)\s*\[([^"\]]+)\]/g, (match, nodeId, label) => {
-      // If the label contains parentheses, slashes, colons, or commas, wrap in quotes
-      if (/[\(\)\/\:\,\&\%\$\#\@\!\{\}]/.test(label)) {
+    // 1. Sanitize edge labels |...|:
+    // Angle brackets like `<RET>` or `<CRIT>` get treated as unclosed HTML tags by Mermaid's lexer.
+    // Parentheses or quotes inside |...| can also break parsing.
+    line = line.replace(/\|([^|]+)\|/g, (match, edgeLabel) => {
+      let cleanedLabel = edgeLabel
+        .replace(/</g, '')
+        .replace(/>/g, '')
+        .replace(/"/g, "'")
+        .trim();
+      return `|"${cleanedLabel}"|`;
+    });
+
+    // 2. Sanitize node definitions:
+    // Any node bracket declaration containing parentheses, colons, slashes, or special symbols
+    // e.g. ID[Label (extra info)] -> ID["Label (extra info)"]
+    line = line.replace(/(\w+)\s*\[([^"\]]+)\]/g, (match, nodeId, label) => {
+      if (/[\(\)\/\:\,\&\%\$\#\@\!\{\}\<\>]/.test(label)) {
         return `${nodeId}["${label.trim()}"]`;
       }
       return match;
     });
+
+    return line;
   });
 
   return cleanedLines.join("\n");
@@ -66,6 +80,9 @@ export default function Mermaid({ chart }: MermaidProps) {
         }
       } catch (err) {
         console.warn("Mermaid render error:", err);
+        // Clean out any fallback error elements injected by mermaid into the DOM
+        const errorElement = document.getElementById(`d${chart}`);
+        if (errorElement) errorElement.remove();
         if (isMounted) {
           setHasError(true);
         }

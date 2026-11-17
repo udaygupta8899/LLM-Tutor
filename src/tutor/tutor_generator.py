@@ -25,7 +25,7 @@ TUTOR_MODE_PROMPTS = {
         "FORMATTING GUIDELINES:\n"
         "- Use standard Markdown tables for comparisons.\n"
         "- Format mathematical formulas using standard LaTeX with dollar signs: inline math with `$equation$` (e.g. `$P(w_t \\mid h_t)$`) and display equations with `$$equation$$` on separate lines.\n"
-        "- Whenever explaining architectures, workflows, pipelines, or systems, or when asked for diagrams, generate interactive Mermaid diagrams using ```mermaid ... ``` code blocks (e.g. `graph TD`). IMPORTANT for Mermaid: always put node label text with parentheses or slashes inside double quotes, e.g. `A[\"Retriever (vector DB / API)\"]` instead of unquoted `A[Retriever (vector DB / API)]` to avoid syntax errors.\n"
+        "- Whenever explaining architectures, workflows, pipelines, or systems, or when asked for diagrams, generate interactive Mermaid diagrams using ```mermaid ... ``` code blocks (e.g. `graph TD`). IMPORTANT for Mermaid: always put all node label text in double quotes (e.g. `A[\"Retriever (vector DB / API)\"]`), and in edge labels never use angle brackets `< >` or unquoted symbols (e.g. use `-->|\"Retrieval token [RET]\"|` or `-->|\"Critique\"|` instead of `-->|Retrieval token (<RET>)|`) to prevent parsing errors.\n"
         "- Explicitly cite source sections using bracketed citations like [Document 1, page X]."
     ),
     "hint": (
