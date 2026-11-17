@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import Mermaid from './Mermaid';
+import { generateQuizPDFReport } from './pdfGenerator';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -23,6 +24,15 @@ interface QuizQuestion {
   question: string;
   options: string[];
   correct_option: string;
+  explanation: string;
+}
+
+interface QuizAnswerRecord {
+  id: number;
+  question: string;
+  selectedOption: string;
+  correctOption: string;
+  isCorrect: boolean;
   explanation: string;
 }
 
@@ -52,6 +62,8 @@ export default function LLMTutorPage() {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
+  const [quizAnswerHistory, setQuizAnswerHistory] = useState<QuizAnswerRecord[]>([]);
+  const [completedQuizSummary, setCompletedQuizSummary] = useState<{ topic: string; score: number; total: number; results: QuizAnswerRecord[] } | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -92,6 +104,8 @@ export default function LLMTutorPage() {
         setSelectedOption(null);
         setIsAnswerSubmitted(false);
         setScore(0);
+        setQuizAnswerHistory([]);
+        setCompletedQuizSummary(null);
         setShowQuizModal(false);
       }
     } catch (err) {
@@ -107,8 +121,22 @@ export default function LLMTutorPage() {
     setIsAnswerSubmitted(true);
 
     const currentQ = activeQuiz?.questions[currentQuestionIndex];
-    if (currentQ && optionLetter === currentQ.correct_option) {
-      setScore(prev => prev + 1);
+    if (currentQ) {
+      const isCorrect = optionLetter === currentQ.correct_option;
+      if (isCorrect) {
+        setScore(prev => prev + 1);
+      }
+      setQuizAnswerHistory(prev => [
+        ...prev,
+        {
+          id: currentQ.id,
+          question: currentQ.question,
+          selectedOption: optionLetter,
+          correctOption: currentQ.correct_option,
+          isCorrect: isCorrect,
+          explanation: currentQ.explanation
+        }
+      ]);
     }
   };
 
@@ -119,14 +147,15 @@ export default function LLMTutorPage() {
       setSelectedOption(null);
       setIsAnswerSubmitted(false);
     } else {
-      // Quiz finished - record summary in chat
-      setMessages(prev => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: `🎉 **Quiz Completed: ${activeQuiz.topic}**\n\n**Your Final Score:** \`${score + (selectedOption === activeQuiz.questions[currentQuestionIndex].correct_option ? 1 : 0)} / ${activeQuiz.questions.length}\`\n\nGreat job reviewing this topic! Click the **Quiz** mode button anytime to start another interactive challenge.`
-        }
-      ]);
+      // Quiz finished - summarize and show downloadable report card
+      const finalScore = score + (selectedOption === activeQuiz.questions[currentQuestionIndex].correct_option ? 1 : 0);
+      const summary = {
+        topic: activeQuiz.topic,
+        score: finalScore,
+        total: activeQuiz.questions.length,
+        results: quizAnswerHistory
+      };
+      setCompletedQuizSummary(summary);
       setActiveQuiz(null);
     }
   };
@@ -317,6 +346,65 @@ export default function LLMTutorPage() {
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Quiz Results Summary & PDF Download Banner */}
+            {completedQuizSummary && (
+              <div className="max-w-3xl mx-auto bg-slate-900 border border-emerald-500/50 rounded-2xl p-6 shadow-2xl space-y-4 animate-in fade-in">
+                <div className="flex justify-between items-start border-b border-slate-800 pb-4">
+                  <div>
+                    <span className="text-xs font-mono uppercase bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-full font-semibold">
+                      Assessment Completed
+                    </span>
+                    <h3 className="text-xl font-bold text-white mt-2">{completedQuizSummary.topic}</h3>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Completed {completedQuizSummary.total} Questions • Final Score: <span className="font-bold text-emerald-400">{completedQuizSummary.score} / {completedQuizSummary.total}</span> ({Math.round((completedQuizSummary.score / completedQuizSummary.total) * 100)}%)
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => generateQuizPDFReport({
+                      topic: completedQuizSummary.topic,
+                      totalQuestions: completedQuizSummary.total,
+                      score: completedQuizSummary.score,
+                      results: completedQuizSummary.results
+                    })}
+                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition transform hover:scale-[1.02]"
+                  >
+                    <span>📄 Download Full PDF Report</span>
+                  </button>
+                </div>
+
+                {/* Strengths & Weaknesses Quick Overview */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs pt-1">
+                  <div className="p-3.5 bg-emerald-950/30 border border-emerald-800/60 rounded-xl space-y-1">
+                    <span className="font-bold text-emerald-400">💪 Strong Areas:</span>
+                    <p className="text-slate-300 leading-relaxed">
+                      {completedQuizSummary.score > 0 
+                        ? `Demonstrated clear command over foundational principles and question mechanics on ${completedQuizSummary.score} topics.`
+                        : "Focus on revisiting introductory lecture slides to establish core terminology."}
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 bg-rose-950/30 border border-rose-800/60 rounded-xl space-y-1">
+                    <span className="font-bold text-rose-400">🎯 Areas to Review:</span>
+                    <p className="text-slate-300 leading-relaxed">
+                      {completedQuizSummary.total - completedQuizSummary.score > 0
+                        ? `Targeted review advised for ${completedQuizSummary.total - completedQuizSummary.score} concept(s). Check the downloadable PDF for complete technical explanations.`
+                        : "Flawless score! Ready to advance to multi-hop architectural reasoning."}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-between items-center text-xs text-slate-500">
+                  <span>Report includes full itemized breakdown and source references</span>
+                  <button 
+                    onClick={() => setCompletedQuizSummary(null)}
+                    className="text-indigo-400 hover:underline"
+                  >
+                    Dismiss
+                  </button>
+                </div>
               </div>
             )}
 
