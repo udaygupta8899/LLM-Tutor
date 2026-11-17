@@ -53,6 +53,7 @@ class ChatRequest(BaseModel):
     thread_id: Optional[str] = "default_thread"
     student_id: Optional[str] = "student_1"
     tutor_mode: Optional[str] = "explain"  # explain, hint, quiz, socratic
+    api_key: Optional[str] = None  # User provided Groq or OpenAI API key
 
 
 class ChatResponse(BaseModel):
@@ -105,7 +106,8 @@ async def chat_endpoint(request: ChatRequest):
             question=request.question,
             student_id=request.student_id or "student_1",
             tutor_mode=request.tutor_mode or "explain",
-            thread_id=request.thread_id or "default_thread"
+            thread_id=request.thread_id or "default_thread",
+            api_key=request.api_key
         )
         
         return ChatResponse(

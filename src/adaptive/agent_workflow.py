@@ -32,6 +32,7 @@ class AgentState(TypedDict):
     student_id: str
     tutor_mode: str
     chat_history: str
+    api_key: Optional[str]
     
     # Security layer state
     security_result: Dict[str, Any]
@@ -194,12 +195,14 @@ class AdaptiveAgenticRAGTutor:
         mode = state.get("tutor_mode", "explain")
         student_id = state.get("student_id", "default_student")
         profile = self.memory.get_profile(student_id)
+        key = state.get("api_key")
         
         generation = self.generator.generate(
             question=question,
             tutor_mode=mode,
             mastery_level=profile["mastery_level"],
-            context_documents=[]
+            context_documents=[],
+            api_key=key
         )
         return {"generation": generation, "retrieved_documents": []}
 
@@ -257,13 +260,15 @@ class AdaptiveAgenticRAGTutor:
         student_id = state.get("student_id", "default_student")
         profile = self.memory.get_profile(student_id)
         docs = state.get("retrieved_documents", [])
+        key = state.get("api_key")
         
         generation = self.generator.generate(
             question=question,
             tutor_mode=mode,
             mastery_level=profile["mastery_level"],
             context_documents=docs,
-            chat_history=state.get("chat_history")
+            chat_history=state.get("chat_history"),
+            api_key=key
         )
         return {"generation": generation}
 
@@ -296,7 +301,8 @@ class AdaptiveAgenticRAGTutor:
         question: str,
         student_id: str = "student_1",
         tutor_mode: str = "explain",
-        thread_id: str = "default_thread"
+        thread_id: str = "default_thread",
+        api_key: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Runs the full Adaptive Agentic RAG tutoring pipeline.
@@ -309,6 +315,7 @@ class AdaptiveAgenticRAGTutor:
             "student_id": student_id,
             "tutor_mode": tutor_mode,
             "chat_history": "",
+            "api_key": api_key,
             "security_result": {},
             "security_status": "PENDING",
             "complexity": "simple",

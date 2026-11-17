@@ -57,7 +57,8 @@ class TutorGenerator:
         tutor_mode: str = "explain",
         mastery_level: str = "intermediate",
         context_documents: Optional[List[Dict[str, Any]]] = None,
-        chat_history: Optional[str] = None
+        chat_history: Optional[str] = None,
+        api_key: Optional[str] = None
     ) -> str:
         """Generates response tailored to tutor mode and learner state."""
         system_instruction = TUTOR_MODE_PROMPTS.get(tutor_mode, TUTOR_MODE_PROMPTS["explain"])
@@ -80,13 +81,14 @@ class TutorGenerator:
             f"Tailor the depth and technical rigor appropriate for this learner."
         )
 
-        if self._llm is not None:
+        active_llm = get_llm(temperature=0.3, api_key=api_key) or self._llm
+        if active_llm is not None:
             try:
                 prompt = ChatPromptTemplate.from_messages([
                     ("system", f"{system_instruction}\n{learner_prompt}\n\n=== REFERENCE CONTEXT ===\n{formatted_context}"),
                     ("human", "Conversation History:\n{history}\n\nStudent Question: {question}")
                 ])
-                chain = prompt | self._llm | StrOutputParser()
+                chain = prompt | active_llm | StrOutputParser()
                 return chain.invoke({
                     "history": chat_history or "None",
                     "question": question

@@ -42,7 +42,18 @@
     </div>
 
     <!-- Active Navigation Tabs -->
-    <nav class="flex space-x-2">
+    <nav class="flex items-center space-x-2">
+      <!-- User API Key Input Modal Trigger -->
+      <div class="relative flex items-center">
+        <input 
+          id="user-api-key" 
+          type="password" 
+          placeholder="Enter Groq API Key (gsk_...)" 
+          class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-indigo-300 placeholder-slate-500 focus:outline-none focus:border-indigo-500 w-56"
+          title="Your Groq API key is sent only with requests and never saved on disk"
+        />
+      </div>
+
       <button onclick="switchTab('tutor')" id="tab-btn-tutor" class="px-4 py-1.5 rounded-md text-sm font-medium bg-indigo-600 text-white flex items-center gap-2">
         <i data-lucide="message-square" class="w-4 h-4"></i> Tutor Workspace
       </button>
@@ -480,6 +491,8 @@
       const question = input.value.trim();
       if (!question) return;
 
+      const apiKey = document.getElementById('user-api-key').value.trim();
+
       appendMessage('user', question);
       input.value = '';
 
@@ -493,7 +506,8 @@
           body: JSON.stringify({
             question: question,
             tutor_mode: currentMode,
-            thread_id: 'web_session_' + Date.now()
+            thread_id: 'web_session_' + Date.now(),
+            api_key: apiKey || null
           })
         });
         const data = await res.json();

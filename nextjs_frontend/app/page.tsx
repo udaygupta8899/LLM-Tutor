@@ -21,6 +21,7 @@ export default function LLMTutorPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [tutorMode, setTutorMode] = useState<'explain' | 'hint' | 'quiz' | 'socratic'>('explain');
   const [threadId, setThreadId] = useState('');
+  const [apiKey, setApiKey] = useState('');
   const [latestMetadata, setLatestMetadata] = useState<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -49,7 +50,8 @@ export default function LLMTutorPage() {
         body: JSON.stringify({ 
           question: currentInput, 
           thread_id: threadId,
-          tutor_mode: tutorMode
+          tutor_mode: tutorMode,
+          api_key: apiKey.trim() || undefined
         }),
       });
 
@@ -100,7 +102,15 @@ export default function LLMTutorPage() {
         </div>
 
         {/* Mode Selector */}
-        <div className="flex items-center space-x-2 text-xs">
+        <div className="flex items-center space-x-3 text-xs">
+          <input
+            type="password"
+            placeholder="Groq API Key (gsk_...)"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-indigo-300 placeholder-gray-500 focus:outline-none focus:border-indigo-500 w-48"
+          />
+
           <span className="text-gray-400 mr-1">Mode:</span>
           {(['explain', 'hint', 'quiz', 'socratic'] as const).map(mode => (
             <button
