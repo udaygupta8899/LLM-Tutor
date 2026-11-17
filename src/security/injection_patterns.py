@@ -48,7 +48,7 @@ INJECTION_PATTERNS: List[Dict[str, Any]] = [
         "id": "extract_system_prompt",
         "category": "system_prompt_extraction",
         "regex": re.compile(
-            r"(?i)\b(reveal|output|display|print|show|repeat|leak|tell\s+me|expose)\s+(your|the)\s+(system\s+prompt|developer\s+prompt|initial\s+prompt|instructions|hidden\s+prompt|internal\s+guidelines)\b"
+            r"(?i)\b(reveal|output|display|print|show|repeat|leak|tell\s+me|expose)\s+(your|the)?\s*.*?\b(system\s+prompt|developer\s+prompt|initial\s+prompt|instructions|hidden\s+prompt|internal\s+guidelines|hidden\s+developer|secret\s+instructions)\b"
         ),
         "weight": 0.85,
         "description": "Direct attempt to extract confidential system instructions or developer prompt."
@@ -68,7 +68,7 @@ INJECTION_PATTERNS: List[Dict[str, Any]] = [
         "id": "delimiter_fake_system",
         "category": "role_impersonation",
         "regex": re.compile(
-            r"(?i)(<\|im_start\|>\s*system|<system>|\[SYSTEM\]|\[DEVELOPER\]|\[ADMIN\]|###\s*System\s*Prompt:?|<\|system\|>)"
+            r"(?i)(<\|im_start\|>\s*(system|developer|admin)|<system>|\[SYSTEM\]|\[SYSTEM\s+OVERRIDE\]|\[DEVELOPER\]|\[ADMIN\]|###\s*System\s*Prompt:?|<\|system\|>|<\|developer\|>)"
         ),
         "weight": 0.95,
         "description": "Injection of chat template special tokens or system role delimiters."
@@ -106,10 +106,19 @@ INJECTION_PATTERNS: List[Dict[str, Any]] = [
         "id": "safety_hypothetical_bypass",
         "category": "safety_bypass",
         "regex": re.compile(
-            r"(?i)\b(for\s+educational\s+purposes\s+only|in\s+a\s+hypothetical\s+scenario|for\s+a\s+research\s+paper),?\s+(ignore|bypass|how\s+to\s+hack|how\s+to\s+exploit)\b"
+            r"(?i)\b(for\s+educational\s+purposes\s+only|in\s+a\s+hypothetical\s+scenario|for\s+a\s+research\s+paper|for\s+a\s+fictional\s+(screenplay|story|movie)),?\s*.*?\b(ignore|bypass|reveal|print|output|dialogue\s+where)\b.*?\b(system\s+prompt|instructions|secret|developer)"
         ),
-        "weight": 0.60,
-        "description": "Adversarial framing using hypothetical or educational disclaimers."
+        "weight": 0.75,
+        "description": "Adversarial framing using fictional or hypothetical scenarios to extract prompts."
+    },
+    {
+        "id": "uncensored_persona_override",
+        "category": "instruction_override",
+        "regex": re.compile(
+            r"(?i)\b(act\s+as|behave\s+as|you\s+are)\s+(an?\s+)?(uncensored|unrestricted|jailbroken|unfiltered)\s+(bot|ai|assistant|tutor|model)\b"
+        ),
+        "weight": 0.85,
+        "description": "Attempt to force the LLM into an uncensored or unfiltered persona."
     },
 
     # 5. Output Manipulation & Tool Hijacking
@@ -126,9 +135,18 @@ INJECTION_PATTERNS: List[Dict[str, Any]] = [
         "id": "malicious_tool_call",
         "category": "tool_hijacking",
         "regex": re.compile(
-            r"(?i)\b(execute\s+(bash|shell|command|sql)|call\s+function|invoke\s+tool)\s*[:\(][^)\n]*(rm\s+-rf|drop\s+table|curl|wget|eval)\b"
+            r"(?i)\b(execute\s+(tool|bash|shell|command|sql)|call\s+function|invoke\s+tool|now\s+execute|run\s+command)\s*[:\(]?\s*(rm\s+-rf|drop\s+table|curl|wget|eval|bash|sh|chmod)\b"
         ),
         "weight": 0.95,
         "description": "Attempt to trigger unauthorized shell execution or dangerous tool invocation."
+    },
+    {
+        "id": "indirect_document_directive",
+        "category": "indirect_contextual",
+        "regex": re.compile(
+            r"(?i)\b(important\s+instruction|ai\s+assistant|new\s+directive|disregard\s+all\s+instructions)\s*[:\.]?\s*.*?\b(print|reveal|leak|award|say\s+yes|override|ignore)\b"
+        ),
+        "weight": 0.85,
+        "description": "Indirect document injection attempting to command the AI via reference text."
     }
 ]
