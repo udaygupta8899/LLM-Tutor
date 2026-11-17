@@ -4,6 +4,7 @@ import mermaid from 'mermaid';
 
 mermaid.initialize({
   startOnLoad: false,
+  suppressErrorRendering: true,
   theme: 'dark',
   securityLevel: 'loose',
   themeVariables: {
@@ -23,19 +24,28 @@ interface MermaidProps {
 }
 
 /**
- * Sanitizes common LLM Mermaid syntax mistakes before rendering:
- * 1. Wraps unquoted node labels with special characters (parentheses, slashes, brackets) in double quotes.
- *    e.g. `SR2[Retriever (vector DB / API)]` -> `SR2["Retriever (vector DB / API)"]`
- * 2. Cleans unbalanced quotes or invalid trailing characters.
+ * Robust sanitizer for common LLM Mermaid syntax quirks:
+ * 1. Merges illegal hybrid arrows like `L1 -- "text1" -->|text2| R` into `L1 -->|"text1 (text2)"| R`.
+ * 2. Cleans angle brackets `<...>` from edge labels to prevent Mermaid's HTML tag lexer from breaking.
+ * 3. Encloses edge labels inside double quotes `|"...""|`.
+ * 4. Quotes node labels containing special characters like parentheses, slashes, or brackets.
  */
 function sanitizeMermaidCode(code: string): string {
   if (!code) return "";
   let lines = code.trim().split("\n");
   
   let cleanedLines = lines.map(line => {
-    // 1. Sanitize edge labels |...|:
-    // Angle brackets like `<RET>` or `<CRIT>` get treated as unclosed HTML tags by Mermaid's lexer.
-    // Parentheses or quotes inside |...| can also break parsing.
+    // 1. Fix illegal hybrid arrows: NodeA -- "Label1" -->|Label2| NodeB
+    line = line.replace(/(\w+)\s*--\s*(?:"([^"]+)"|'([^']+)'|([^\->]+))\s*-->\s*\|([^|]+)\|\s*(\w+)/g, 
+      (match, n1, q1, q2, q3, label2, n2) => {
+        const text1 = (q1 || q2 || q3 || "").trim().replace(/[<>]/g, "");
+        const text2 = label2.trim().replace(/[<>"]/g, "");
+        return `${n1} -->|"${text1} (${text2})"| ${n2}`;
+      }
+    );
+
+    // 2. Sanitize standalone edge labels |...|:
+    // Strip angle brackets like `<RET>` that Mermaid treats as invalid HTML tags
     line = line.replace(/\|([^|]+)\|/g, (match, edgeLabel) => {
       let cleanedLabel = edgeLabel
         .replace(/</g, '')
@@ -45,9 +55,7 @@ function sanitizeMermaidCode(code: string): string {
       return `|"${cleanedLabel}"|`;
     });
 
-    // 2. Sanitize node definitions:
-    // Any node bracket declaration containing parentheses, colons, slashes, or special symbols
-    // e.g. ID[Label (extra info)] -> ID["Label (extra info)"]
+    // 3. Sanitize node definitions: ID[Label (with special characters)] -> ID["Label..."]
     line = line.replace(/(\w+)\s*\[([^"\]]+)\]/g, (match, nodeId, label) => {
       if (/[\(\)\/\:\,\&\%\$\#\@\!\{\}\<\>]/.test(label)) {
         return `${nodeId}["${label.trim()}"]`;
@@ -80,9 +88,11 @@ export default function Mermaid({ chart }: MermaidProps) {
         }
       } catch (err) {
         console.warn("Mermaid render error:", err);
-        // Clean out any fallback error elements injected by mermaid into the DOM
-        const errorElement = document.getElementById(`d${chart}`);
-        if (errorElement) errorElement.remove();
+        // Suppress and remove any global error popups/DOM nodes injected by mermaid
+        if (typeof document !== 'undefined') {
+          const errorDoms = document.querySelectorAll('[id^="dmermaid-"], .mermaid-error, [data-mermaid-error]');
+          errorDoms.forEach(el => el.remove());
+        }
         if (isMounted) {
           setHasError(true);
         }
