@@ -107,11 +107,16 @@ export default function LLMTutorPage() {
         })
       });
       const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || "Failed to generate dynamic question from LLM.");
+      }
       setCurrentQuestion(data);
       setSelectedOption(null);
       setIsAnswerSubmitted(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert(err.message || "Failed to generate dynamic question. Please ensure your API key is provided.");
+      setIsQuizActive(false);
     } finally {
       setIsFetchingQuestion(false);
     }

@@ -94,13 +94,18 @@ class GenerateSingleQuestionRequest(BaseModel):
 @app.post("/api/quiz/single-question")
 def generate_single_question_endpoint(request: GenerateSingleQuestionRequest):
     """Dynamically generates one question matching learner level."""
-    return quiz_manager.generate_single_question(
-        topic=request.topic,
-        question_number=request.question_number,
-        difficulty=request.difficulty,
-        previous_questions=request.previous_questions,
-        api_key=request.api_key
-    )
+    try:
+        return quiz_manager.generate_single_question(
+            topic=request.topic,
+            question_number=request.question_number,
+            difficulty=request.difficulty,
+            previous_questions=request.previous_questions,
+            api_key=request.api_key
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # Endpoints
