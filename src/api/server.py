@@ -93,6 +93,9 @@ class GenerateSingleQuestionRequest(BaseModel):
 
 
 @app.post("/api/quiz/single-question")
+@app.post("/api/quiz/single-question/")
+@app.post("/quiz/single-question")
+@app.post("/api/api/quiz/single-question")
 def generate_single_question_endpoint(request: GenerateSingleQuestionRequest):
     """Dynamically generates one question matching learner level."""
     if not request.api_key or not request.api_key.strip():
@@ -128,6 +131,10 @@ def read_root():
 
 
 @app.post("/api/chat", response_model=ChatResponse)
+@app.post("/api/chat/", response_model=ChatResponse)
+@app.post("/chat", response_model=ChatResponse)
+@app.post("/chat/", response_model=ChatResponse)
+@app.post("/api/api/chat", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest):
     """
     Main conversational endpoint:

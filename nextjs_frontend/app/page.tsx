@@ -45,7 +45,8 @@ function cleanLatexDelimiters(text: string): string {
   return cleaned;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const rawApiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE = rawApiBase.trim().replace(/\/+$/, "").replace(/\/api$/, "");
 
 export default function LLMTutorPage() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -285,7 +286,7 @@ export default function LLMTutorPage() {
     } catch (err: any) {
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: `**⚠️ Error:** ${err.message || `Could not connect to LLM Tutor API (${API_BASE}).`}` 
+        content: `**⚠️ Error:** ${err.message || 'Connection failed'}\n\n*Target Endpoint:* \`${API_BASE}/api/chat\`\n\n*Troubleshooting:*\n1. If testing on Netlify, ensure your Render backend is finished deploying and awake.\n2. Ensure \`NEXT_PUBLIC_API_URL\` in your Netlify site settings matches your Render backend URL (e.g. \`https://<service-name>.onrender.com\`).\n3. If testing locally, ensure backend is running with: \`uvicorn main:app --port 8000\`.` 
       }]);
     } finally {
       setIsLoading(false);
