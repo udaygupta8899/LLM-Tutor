@@ -2,6 +2,8 @@
 import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -13,6 +15,15 @@ interface Message {
     latency_seconds?: number;
     retrieved_documents?: any[];
   };
+}
+
+function cleanLatexDelimiters(text: string): string {
+  if (!text) return "";
+  // Convert \[ ... \] display math to $$ ... $$
+  let cleaned = text.replace(/\\\[([\s\S]*?)\\\]/g, '$$$$$1$$$$');
+  // Convert \( ... \) inline math to $ ... $
+  cleaned = cleaned.replace(/\\\(([\s\S]*?)\\\)/g, '$$$1$$');
+  return cleaned;
 }
 
 export default function LLMTutorPage() {
@@ -173,8 +184,11 @@ export default function LLMTutorPage() {
                   : 'bg-[#1f2937] border border-gray-700 text-gray-200 rounded-bl-sm'
                 }`}>
                   <div className="markdown-content text-sm text-gray-200">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {m.content}
+                    <ReactMarkdown 
+                      remarkPlugins={[remarkGfm, remarkMath]}
+                      rehypePlugins={[rehypeKatex]}
+                    >
+                      {cleanLatexDelimiters(m.content)}
                     </ReactMarkdown>
                   </div>
                 </div>

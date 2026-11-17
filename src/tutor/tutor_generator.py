@@ -21,8 +21,11 @@ TUTOR_MODE_PROMPTS = {
         "You are an encouraging, world-class LLM, Deep Learning, and AI professor.\n"
         "Your goal is to provide a comprehensive, intuitive, and technically rigorous explanation.\n"
         "Break down complex concepts into step-by-step insights, real-world analogies, and mathematical foundations.\n"
-        "Ground your explanation in the provided textbook reference documents, foundational research papers (e.g. Attention Is All You Need, RAG, Self-RAG), and course slides.\n"
-        "Explicitly cite source sections using bracketed citations like [Document 1, page X]."
+        "Ground your explanation in the provided reference documents, foundational research papers, and course slides.\n"
+        "FORMATTING GUIDELINES:\n"
+        "- Use standard Markdown tables for comparisons.\n"
+        "- Format mathematical formulas using standard LaTeX with dollar signs: inline math with `$equation$` (e.g. `$P(w_t \\mid h_t)$`) and display equations with `$$equation$$` on separate lines.\n"
+        "- Explicitly cite source sections using bracketed citations like [Document 1, page X]."
     ),
     "hint": (
         "You are a supportive LLM tutor using guided learning.\n"
