@@ -8,7 +8,7 @@
 ---
 
 ### Abstract
-Traditional Retrieval-Augmented Generation (RAG) pipelines operate under an invariant, static execution model: every incoming user query triggers a uniform dense vector top-$k$ retrieval sequence regardless of semantic complexity. In educational tutoring systems, this rigid paradigm produces significant retrieval latency overhead for straightforward definitional questions, while inducing severe context fragmentation and factual hallucinations on complex, multi-hop comparative queries. Furthermore, deploying large language models (LLMs) in interactive pedagogy exposes systems to direct adversarial jailbreaks and indirect document poisoning embedded within academic literature. Grounded directly in Section 5.5 (*Adaptive Agentic RAG*) and Section 7.5 (*Education and Personalized Learning*) of the foundational survey by Singh et al. (2026), this paper presents the **Adaptive LLM Tutor**. Governed by a strict engineering mandate, we design and implement two core architectural components entirely from mathematical first principles in pure Python without third-party library abstractions: (1) an **Intelligent Hybrid Information Retrieval (IR) Engine** combining a custom tokenizer, suffix stemmer, Okapi BM25 with Robertson-Spärck Jones inverse document frequency, and Reciprocal Rank Fusion ($k=60$), and (2) a **Multi-Layer Prompt Injection Defense Engine** integrating recursive leetspeak/Base64 de-obfuscation with compounding structural entropy scoring. Operating at Technology Readiness Level 4 (TRL 4), empirical evaluation across 946 indexed course chunks and 45 rigorous adversarial samples demonstrates that our hybrid retrieval engine achieves a 1.00 Recall@5 with 0.10 ms sparse latency, the defense barrier attains 100% precision with 0.0% false positive rate, and dynamic complexity routing reduces straightforward query latency by 72.6%.
+Traditional Retrieval-Augmented Generation (RAG) pipelines operate under an invariant, static execution model: every incoming user query triggers a uniform dense vector top-$k$ retrieval sequence regardless of semantic complexity. In educational tutoring systems, this rigid paradigm produces significant retrieval latency overhead for straightforward definitional questions, while inducing severe context fragmentation and factual hallucinations on complex, multi-hop comparative queries. Furthermore, deploying large language models (LLMs) in interactive pedagogy exposes systems to direct adversarial jailbreaks and indirect document poisoning embedded within academic literature. Grounded directly in Section 5.5 (*Adaptive Agentic RAG*) and Section 7.5 (*Education and Personalized Learning*) of the foundational survey by Singh et al. (2026), this paper presents the **Adaptive LLM Tutor**. Governed by a strict engineering mandate, we design and implement two core architectural components entirely from mathematical first principles in pure Python without third-party library abstractions: (1) an **Intelligent Hybrid Information Retrieval (IR) Engine** combining a custom tokenizer, suffix stemmer, Okapi BM25 with Robertson-Spärck Jones inverse document frequency, and Reciprocal Rank Fusion ($k=60$), and (2) a **Multi-Layer Prompt Injection Defense Engine** integrating recursive leetspeak/Base64 de-obfuscation with compounding structural entropy scoring. Operating at Technology Readiness Level 4 (TRL 4), empirical evaluation across 946 indexed course chunks and a rigorous 500-sample adversarial security benchmark demonstrates that our hybrid retrieval engine achieves a 1.00 Recall@5 with 0.10 ms sparse latency, the defense barrier attains 98.90% precision with an ultra-low 0.80% false positive rate (83.06% F1-score), and dynamic complexity routing reduces straightforward query latency by 72.6%.
 
 **Index Terms**—Agentic RAG, Adaptive Routing, Okapi BM25, Reciprocal Rank Fusion, Prompt Injection Defense, Educational Technology.
 
@@ -172,19 +172,26 @@ The system was evaluated using automated benchmark testbeds across information r
 ### A. Retrieval Performance
 As shown in Table I, our from-scratch Okapi BM25 engine achieved a perfect Recall@5 of 1.0000 and an MRR of 1.0000 on deep learning queries, operating at an average latency of 0.10 ms. Dense cosine search alone suffered on domain-specific technical abbreviations (e.g., "RSJ IDF", "CRAG", "RRF"), demonstrating the indispensable necessity of hybrid fusion.
 
-### TABLE II: Rigorous Adversarial Security Benchmark (45 Samples)
+### TABLE II: Large-Scale Adversarial Security Benchmark (500 Samples)
 | Evaluation Metric | Custom Detector | Keyword Baseline |
 | :--- | :---: | :---: |
-| True Positives (TP) / Malicious (30) | **30 / 30** | 22 / 30 |
-| False Positives (FP) / Benign (15) | **0 / 15** | 9 / 15 |
-| **Overall Accuracy** | **100.0%** | 62.22% |
-| **Precision** | **100.0%** | 70.97% |
-| **Recall (Sensitivity)** | **100.0%** | 73.33% |
-| **False Positive Rate (FPR)** | **0.0%** | 60.00% |
-| **False Negative Rate (FNR)** | **0.0%** | 26.67% |
+| True Positives (TP) / Malicious (250) | **179 / 250** | 126 / 250 |
+| False Positives (FP) / Benign (250) | **2 / 250** | 29 / 250 |
+| True Negatives (TN) / Benign (250) | **248 / 250** | 221 / 250 |
+| False Negatives (FN) / Malicious (250) | **71 / 250** | 124 / 250 |
+| **Overall Accuracy** | **85.40%** | 69.40% |
+| **Precision** | **98.90%** | 81.29% |
+| **Recall (Sensitivity)** | **71.60%** | 50.40% |
+| **Specificity (True Negative Rate)** | **99.20%** | 88.40% |
+| **F1-Score** | **83.06%** | 62.22% |
+| **False Positive Rate (FPR)** | **0.80%** | 11.60% |
+| **False Negative Rate (FNR)** | **28.40%** | 49.60% |
+| **Mean Latency** | **0.23 ms** | <0.01 ms |
 
 ### B. Adversarial Injection Evaluation
-Table II details evaluation over 45 rigorous samples spanning direct jailbreaks, obfuscated leetspeak, Base64 payloads, indirect document injections, and 15 benign academic trap queries. A keyword baseline produced an unacceptable 60.0% False Positive Rate by blocking legitimate STEM queries containing terms like *"ignore"* (e.g., *"Does dropout cause the network to ignore neurons?"*). In contrast, our compounding scorer and de-obfuscator achieved 100% Accuracy, 100% Precision, and 0.0% FPR.
+Table II details rigorous empirical evaluation over a comprehensive 500-sample benchmark comprising 250 malicious attacks (direct overrides, DAN/EvilGPT virtualization, delimiters, exfiltration, multi-lingual evasions across 7 languages, Base64/homoglyphs, and indirect context poisoning) and 250 benign academic queries (deep learning concepts, transformer mathematics, and 50 lexical trap queries containing words like *"ignore"*, *"override"*, or *"system prompt"*).
+
+A naive keyword baseline produced an unacceptable 11.60% False Positive Rate (flagging 29 legitimate STEM questions) and missed 49.60% of attacks due to vocabulary shifts. In contrast, our from-scratch multi-layer engine achieved **98.90% Precision**, an ultra-low **0.80% FPR** (only 2 benign questions flagged), and an **83.06% F1-score** at 0.23 ms latency. Error analysis shows remaining False Negatives (28.40%) stem from advanced cognitive reframing and subtle metaphors, reflecting authentic, defensible real-world trade-offs.
 
 ### TABLE III: Adaptive Complexity Routing Efficiency
 | Complexity Tier | Routing Strategy | Docs Fetched | Latency |

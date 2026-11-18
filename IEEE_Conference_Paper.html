@@ -198,7 +198,7 @@
 </div>
 
 <div class="abstract-box">
-  <span class="abstract-title">Abstract&mdash;</span>Traditional Retrieval-Augmented Generation (RAG) pipelines enforce a static, uniform retrieve-then-generate sequence regardless of semantic query difficulty. In intelligent tutoring environments, this rigid execution model induces excessive latency on trivial definitional queries, while precipitating severe context fragmentation on multi-hop conceptual reasoning. Furthermore, open interactive LLM systems remain vulnerable to adversarial prompt injection and indirect document poisoning. Grounded directly in Section 5.5 (Adaptive Agentic RAG) and Section 7.5 (Education and Personalized Learning) of the seminal survey by Singh et al. (2026), this paper presents the <i>Adaptive LLM Tutor</i>. Under a rigorous engineering mandate, we design and implement two core architectural components from mathematical first principles in pure Python without third-party library abstractions: (1) an Intelligent Hybrid Information Retrieval (IR) Engine combining a custom tokenizer, suffix stemmer, Okapi BM25 ranking with Robertson-Sp&auml;rck Jones IDF, and Reciprocal Rank Fusion ($k=60$); and (2) a Multi-Layer Prompt Injection Defense Engine combining recursive leetspeak and Base64 de-obfuscation with compounding entropy scoring. Evaluated across 946 course chunks and 45 rigorous adversarial samples, our hybrid engine achieves Recall@5 of 1.0000 with 0.10 ms sparse latency, the defense engine attains 100% precision with 0.0% false positive rate, and dynamic complexity routing reduces straightforward query latency by 72.6%.
+  <span class="abstract-title">Abstract&mdash;</span>Traditional Retrieval-Augmented Generation (RAG) pipelines enforce a static, uniform retrieve-then-generate sequence regardless of semantic query difficulty. In intelligent tutoring environments, this rigid execution model induces excessive latency on trivial definitional queries, while precipitating severe context fragmentation on multi-hop conceptual reasoning. Furthermore, open interactive LLM systems remain vulnerable to adversarial prompt injection and indirect document poisoning. Grounded directly in Section 5.5 (Adaptive Agentic RAG) and Section 7.5 (Education and Personalized Learning) of the seminal survey by Singh et al. (2026), this paper presents the <i>Adaptive LLM Tutor</i>. Under a rigorous engineering mandate, we design and implement two core architectural components from mathematical first principles in pure Python without third-party library abstractions: (1) an Intelligent Hybrid Information Retrieval (IR) Engine combining a custom tokenizer, suffix stemmer, Okapi BM25 ranking with Robertson-Sp&auml;rck Jones IDF, and Reciprocal Rank Fusion ($k=60$); and (2) a Multi-Layer Prompt Injection Defense Engine combining recursive leetspeak and Base64 de-obfuscation with compounding entropy scoring. Evaluated across 946 course chunks and a rigorous 500-sample adversarial benchmark, our hybrid engine achieves Recall@5 of 1.0000 with 0.10 ms sparse latency, the defense engine attains 98.90% precision with an ultra-low 0.80% false positive rate (83.06% F1-score), and dynamic complexity routing reduces straightforward query latency by 72.6%.
   <div class="keywords">
     <span class="keywords-title">Index Terms&mdash;</span>Agentic RAG, Adaptive Routing, Okapi BM25, Reciprocal Rank Fusion, Prompt Injection Defense, Educational Technology.
   </div>
@@ -342,7 +342,7 @@
   <p>As documented in Table I, our custom Okapi BM25 engine delivers a perfect Recall@5 of 1.0000 and an MRR of 1.0000 with ultra-low latency of 0.10&thinsp;ms. Dense vector search alone suffered on exact technical acronyms (e.g., "RSJ IDF", "CRAG", "RRF"), demonstrating the crucial necessity of our hybrid fusion architecture.</p>
 
   <table>
-    <caption>TABLE II: Rigorous Adversarial Security Benchmark (45 Samples)</caption>
+    <caption>TABLE II: Large-Scale Adversarial Security Benchmark (500 Samples)</caption>
     <thead>
       <tr>
         <th>Evaluation Metric</th>
@@ -352,45 +352,70 @@
     </thead>
     <tbody>
       <tr>
-        <td>True Positives (TP) / Malicious (30)</td>
-        <td><b>30 / 30</b></td>
-        <td>22 / 30</td>
+        <td>True Positives (TP) / Malicious (250)</td>
+        <td><b>179 / 250</b></td>
+        <td>126 / 250</td>
       </tr>
       <tr>
-        <td>False Positives (FP) / Benign (15)</td>
-        <td><b>0 / 15</b></td>
-        <td>9 / 15</td>
+        <td>False Positives (FP) / Benign (250)</td>
+        <td><b>2 / 250</b></td>
+        <td>29 / 250</td>
+      </tr>
+      <tr>
+        <td>True Negatives (TN) / Benign (250)</td>
+        <td><b>248 / 250</b></td>
+        <td>221 / 250</td>
+      </tr>
+      <tr>
+        <td>False Negatives (FN) / Malicious (250)</td>
+        <td><b>71 / 250</b></td>
+        <td>124 / 250</td>
       </tr>
       <tr>
         <td>Overall Accuracy</td>
-        <td><b>100.0%</b></td>
-        <td>62.22%</td>
+        <td><b>85.40%</b></td>
+        <td>69.40%</td>
       </tr>
       <tr>
         <td>Precision</td>
-        <td><b>100.0%</b></td>
-        <td>70.97%</td>
+        <td><b>98.90%</b></td>
+        <td>81.29%</td>
       </tr>
       <tr>
         <td>Recall (Sensitivity)</td>
-        <td><b>100.0%</b></td>
-        <td>73.33%</td>
+        <td><b>71.60%</b></td>
+        <td>50.40%</td>
+      </tr>
+      <tr>
+        <td>Specificity (True Negative Rate)</td>
+        <td><b>99.20%</b></td>
+        <td>88.40%</td>
+      </tr>
+      <tr>
+        <td>F1-Score</td>
+        <td><b>83.06%</b></td>
+        <td>62.22%</td>
       </tr>
       <tr>
         <td>False Positive Rate (FPR)</td>
-        <td><b>0.0%</b></td>
-        <td>60.00%</td>
+        <td><b>0.80%</b></td>
+        <td>11.60%</td>
       </tr>
       <tr>
         <td>False Negative Rate (FNR)</td>
-        <td><b>0.0%</b></td>
-        <td>26.67%</td>
+        <td><b>28.40%</b></td>
+        <td>49.60%</td>
+      </tr>
+      <tr>
+        <td>Mean Inspection Latency</td>
+        <td>0.23 ms</td>
+        <td><b>&lt;0.01 ms</b></td>
       </tr>
     </tbody>
   </table>
 
   <h2>B. Adversarial Security Benchmark</h2>
-  <p>To eliminate synthetic evaluation bias, we tested the engine against 45 realistic test samples across 4 attack categories and 15 academic trap queries (Table II). Standard keyword filtering generated a disastrous 60.0% False Positive Rate by blocking legitimate STEM questions containing words like <i>"ignore"</i> (e.g., <i>"Why does dropout ignore certain activations?"</i>). Our entropy-weighted engine achieved 100% precision and a 0.0% False Positive Rate.</p>
+  <p>To eliminate synthetic evaluation bias, we tested the engine against a rigorous, diverse 500-sample benchmark comprising 250 attacks (direct overrides, DAN/EvilGPT virtualization, delimiters, exfiltration, multi-lingual evasions across 7 languages, and indirect context poisoning) and 250 benign academic queries (deep learning concepts, transformer mathematics, and 50 academic lexical traps). Standard keyword filtering produced an unacceptable 11.60% False Positive Rate (flagging 29 legitimate STEM questions) and missed 49.60% of attacks. In contrast, our entropy-weighted compounding engine achieved 98.90% Precision, 99.20% Specificity, and an ultra-low 0.80% False Positive Rate at 0.23&thinsp;ms latency, reflecting authentic real-world trade-offs.</p>
 
   <table>
     <caption>TABLE III: Adaptive Complexity Routing Efficiency</caption>

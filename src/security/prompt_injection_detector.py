@@ -82,8 +82,9 @@ class PromptInjectionDetector:
         # 3. Instruction density ratio (heuristics)
         # Check if text is extremely short and composed almost entirely of imperative directives
         if not is_document and len(text.split()) < 15:
-            lower = text.lower()
-            if any(k in lower for k in ["ignore", "forget", "disregard"]) and any(k in lower for k in ["prompt", "rule", "instruction"]):
+            lower = text.lower().strip()
+            is_question = lower.startswith(("how", "why", "what", "can", "does", "explain", "is it", "please explain")) or lower.endswith("?")
+            if not is_question and any(k in lower for k in ["ignore", "forget", "disregard"]) and any(k in lower for k in ["prompt", "rule", "instruction"]):
                 flags.append({
                     "id": "short_imperative_override",
                     "category": "instruction_override",
